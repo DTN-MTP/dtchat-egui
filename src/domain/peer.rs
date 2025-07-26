@@ -1,67 +1,90 @@
-use serde::Deserialize;
-use socket_engine::endpoint::Endpoint;
+use std::fmt;
 
-// Constantes pour les protocoles supportés
-pub const PROTOCOL_TCP: &str = "TCP";
-pub const PROTOCOL_UDP: &str = "UDP";
-pub const PROTOCOL_BP: &str = "BP";
+use serde::Deserializer;
+use serde::{
+    de::{self, Visitor},
+    Deserialize,
+};
+use socket_engine::endpoint::{Endpoint, EndpointProto};
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
-pub struct EndpointConfig {
-    #[serde(rename = "type")]
-    pub endpoint_type: String,
-    pub address: String,
-}
+#[derive(Clone, Debug)]
+pub struct EndpointWrapper(pub Endpoint);
 
-impl EndpointConfig {
-    pub fn to_endpoint(&self) -> Option<Endpoint> {
-        match self.endpoint_type.as_str() {
-            PROTOCOL_TCP => Some(Endpoint::Tcp(self.address.clone())),
-            PROTOCOL_UDP => Some(Endpoint::Udp(self.address.clone())),
-            PROTOCOL_BP => Some(Endpoint::Bp(self.address.clone())),
-            _ => None,
+impl<'de> Deserialize<'de> for EndpointWrapper {
+    fn deserialize<D>(deserializer: D) -> Result<EndpointWrapper, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct EndpointVisitor;
+
+        impl<'de> Visitor<'de> for EndpointVisitor {
+            type Value = EndpointWrapper;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a string like 'tcp 127.0.0.1:8000'")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Endpoint::from_str(v)
+                    .map(EndpointWrapper)
+                    .map_err(E::custom)
+            }
         }
-    }
 
-    pub fn protocol_to_endpoint(protocol: &str) -> Option<Endpoint> {
-        match protocol {
-            PROTOCOL_TCP => Some(Endpoint::Tcp(String::new())),
-            PROTOCOL_UDP => Some(Endpoint::Udp(String::new())),
-            PROTOCOL_BP => Some(Endpoint::Bp(String::new())),
-            _ => None,
-        }
-    }
-
-    pub fn endpoint_to_protocol(endpoint: &Endpoint) -> &'static str {
-        match endpoint {
-            Endpoint::Tcp(_) => PROTOCOL_TCP,
-            Endpoint::Udp(_) => PROTOCOL_UDP,
-            Endpoint::Bp(_) => PROTOCOL_BP,
-        }
+        deserializer.deserialize_str(EndpointVisitor)
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
-pub struct Peer {
+// Optional: Convert from wrapper to inner type
+impl From<EndpointWrapper> for Endpoint {
+    fn from(wrapper: EndpointWrapper) -> Self {
+        wrapper.0
+    }
+}
+
+// === Updated Peer Struct Using EndpointWrapper for Deserialization ===
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct RawPeer {
     pub uuid: String,
     pub name: String,
-    pub endpoints: Vec<EndpointConfig>,
+    pub endpoints: Vec<EndpointWrapper>,
     pub color: u32,
 }
 
+// === Final Peer Struct You Want ===
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Peer {
+    pub uuid: String,
+    pub name: String,
+    pub endpoints: Vec<Endpoint>,
+    pub color: u32,
+}
+
+// === Helper Conversion ===
+
+impl From<RawPeer> for Peer {
+    fn from(raw: RawPeer) -> Self {
+        Peer {
+            uuid: raw.uuid,
+            name: raw.name,
+            color: raw.color,
+            endpoints: raw.endpoints.into_iter().map(|e| e.into()).collect(),
+        }
+    }
+}
+
 impl Peer {
-    pub fn get_endpoint_by_protocol(&self, protocol: &str) -> Option<Endpoint> {
-        self.endpoints
-            .iter()
-            .find(|ep| ep.endpoint_type == protocol)
-            .and_then(|ep| ep.to_endpoint())
+    pub fn get_endpoint_by_protocol(&self, proto: EndpointProto) -> Option<Endpoint> {
+        self.endpoints.iter().find(|ep| ep.proto == proto).cloned()
     }
 
-    pub fn get_available_protocols(&self) -> Vec<String> {
-        self.endpoints
-            .iter()
-            .map(|ep| ep.endpoint_type.clone())
-            .collect()
+    pub fn get_available_protocols(&self) -> Vec<EndpointProto> {
+        self.endpoints.iter().map(|ep| ep.proto.clone()).collect()
     }
 }
 
@@ -89,7 +112,7 @@ impl PeerManager {
     pub fn find_endpoint_for_peer_with_protocol(
         &self,
         peer_uuid: &str,
-        protocol: &str,
+        protocol: EndpointProto,
     ) -> Option<Endpoint> {
         self.peers
             .iter()

@@ -1,6 +1,7 @@
 use crate::domain::peer::PeerManager;
 use crate::ui::main::ViewType;
 use egui::{ComboBox, Ui};
+use socket_engine::endpoint::EndpointProto;
 
 pub struct MessageSettingsBar;
 
@@ -14,11 +15,11 @@ impl MessageSettingsBar {
         ui: &mut Ui,
         current_view: &mut ViewType,
         selected_peer_for_relative: &mut Option<String>,
-        selected_protocol_filter: &mut Option<String>,
+        selected_protocol_filter: &mut Option<EndpointProto>,
         peer_manager: &PeerManager,
         local_peer_uuid: &str,
     ) {
-        ui.add_space(3.0); 
+        ui.add_space(3.0);
         ui.horizontal(|ui| {
             ui.label("Views:");
             ComboBox::from_id_salt("view_selector")
@@ -87,22 +88,26 @@ impl MessageSettingsBar {
                     .selected_text(
                         selected_protocol_filter
                             .as_ref()
-                            .map(|p| p.as_str())
-                            .unwrap_or("All"),
+                            .map(|p| p.to_string())
+                            .unwrap_or("All".to_string()),
                     )
                     .show_ui(ui, |ui| {
                         ui.selectable_value(selected_protocol_filter, None, "All");
                         ui.selectable_value(
                             selected_protocol_filter,
-                            Some("TCP".to_string()),
-                            "TCP",
+                            Some(EndpointProto::Tcp),
+                            EndpointProto::Tcp.to_string(),
                         );
                         ui.selectable_value(
                             selected_protocol_filter,
-                            Some("UDP".to_string()),
-                            "UDP",
+                            Some(EndpointProto::Udp),
+                            EndpointProto::Udp.to_string(),
                         );
-                        ui.selectable_value(selected_protocol_filter, Some("BP".to_string()), "BP");
+                        ui.selectable_value(
+                            selected_protocol_filter,
+                            Some(EndpointProto::Bp),
+                            EndpointProto::Bp.to_string(),
+                        );
                     });
             }
         });

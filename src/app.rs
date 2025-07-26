@@ -196,11 +196,7 @@ impl EventHandler {
                             format!("Listening on {}", endpoint.to_string()),
                         ),
                         ConnectionEvent::Established { remote } => {
-                            let client_addr = match remote {
-                                Endpoint::Tcp(addr) => addr,
-                                Endpoint::Udp(addr) => addr,
-                                Endpoint::Bp(addr) => addr,
-                            };
+                            let client_addr = remote.endpoint;
                             (
                                 EventLevel::Debug,
                                 format!("Connection established (client: {})", client_addr),
@@ -209,11 +205,7 @@ impl EventHandler {
                         ConnectionEvent::Closed { remote } => {
                             let message = match remote {
                                 Some(remote_ep) => {
-                                    let client_addr = match remote_ep {
-                                        Endpoint::Tcp(addr) => addr,
-                                        Endpoint::Udp(addr) => addr,
-                                        Endpoint::Bp(addr) => addr,
-                                    };
+                                    let client_addr = remote_ep.endpoint;
                                     format!("Connection closed (client: {})", client_addr)
                                 }
                                 None => "Connection closed (no client info)".to_string(),

@@ -49,10 +49,8 @@ impl Header {
                             ui.with_layout(
                                 eframe::egui::Layout::right_to_left(eframe::egui::Align::Center),
                                 |ui| {
-                                    let protocol_text = format!(
-                                        "{} - {}",
-                                        endpoint.endpoint_type, endpoint.address
-                                    );
+                                    let protocol_text =
+                                        format!("{} - {}", endpoint.proto, endpoint.endpoint);
                                     ui.label(
                                         eframe::egui::RichText::new(&protocol_text)
                                             .size(10.0)

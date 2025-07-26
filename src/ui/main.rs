@@ -12,6 +12,7 @@ use dtchat_backend::message::{
 };
 use eframe::egui;
 use egui::{CentralPanel, TopBottomPanel, Ui};
+use socket_engine::endpoint::EndpointProto;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 
@@ -55,7 +56,7 @@ pub struct UIState {
     pub current_view: ViewType,
     pub header: Header,
     pub selected_peer_for_relative: Option<String>,
-    pub selected_protocol_filter: Option<String>,
+    pub selected_protocol_filter: Option<EndpointProto>,
 }
 
 impl Default for UIState {
@@ -131,8 +132,9 @@ impl UIState {
                 let mut msg_vec: Vec<ChatMessage> = messages.iter().cloned().collect();
 
                 // Appliquer le filtre par protocole d'abord
-                msg_vec =
-                    filter_by_network_endpoint(&msg_vec, self.selected_protocol_filter.as_deref());
+                if let Some(filter_by) = &self.selected_protocol_filter {
+                    msg_vec = filter_by_network_endpoint(&msg_vec, filter_by.clone());
+                }
 
                 // Ensuite appliquer le tri
                 if let Some(ref peer_uuid) = self.selected_peer_for_relative {

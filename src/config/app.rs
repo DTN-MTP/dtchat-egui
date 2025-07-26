@@ -1,11 +1,12 @@
 use crate::app::{EventHandler, EventLevel};
 use crate::domain::peer::Peer;
+use crate::domain::peer::RawPeer;
 use crate::log_with_location;
 use crate::utils::load_yaml_from_file;
 use serde::Deserialize;
 use std::sync::{Arc, Mutex};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct AppConfig {
     pub peer_list: Vec<Peer>,
     pub local_peer: Peer,
@@ -14,7 +15,7 @@ pub struct AppConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct ConfigFile {
-    pub peer_list: Vec<Peer>,
+    pub peer_list: Vec<RawPeer>,
     #[serde(default)]
     #[allow(dead_code)]
     pub a_sabr: Option<String>,
@@ -35,14 +36,18 @@ impl AppConfig {
             .clone();
 
         Ok(AppConfig {
-            peer_list: config_file.peer_list,
-            local_peer,
+            peer_list: config_file
+                .peer_list
+                .iter()
+                .map(|rp| Peer::from(rp.clone()))
+                .collect(),
+            local_peer: Peer::from(local_peer),
         })
     }
 
     pub fn from_default(event_handler: Option<Arc<Mutex<EventHandler>>>) -> Self {
         let config_path = "db/default.yaml";
-        
+
         if let Some(eh) = &event_handler {
             if let Ok(mut handler) = eh.lock() {
                 handler.add_app_event(

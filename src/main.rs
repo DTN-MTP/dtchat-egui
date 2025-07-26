@@ -19,18 +19,7 @@ use socket_engine::engine::Engine;
 use crate::domain::peer::Peer;
 
 fn convert_peer_to_backend(domain_peer: &Peer) -> BackendPeer {
-    let endpoints: Vec<Endpoint> = domain_peer
-        .endpoints
-        .iter()
-        .map(|ep| {
-            match ep.endpoint_type.as_str() {
-                "UDP" => Endpoint::Udp(ep.address.clone()),
-                "BP" => Endpoint::Bp(ep.address.clone()),
-                _ => Endpoint::Tcp(ep.address.clone()), // TCP par défaut
-            }
-        })
-        .collect();
-
+    let endpoints: Vec<Endpoint> = domain_peer.endpoints.clone();
     BackendPeer {
         uuid: domain_peer.uuid.clone(),
         name: domain_peer.name.clone(),

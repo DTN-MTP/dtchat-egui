@@ -1,14 +1,14 @@
-use crate::domain::peer::{EndpointConfig, Peer, PeerManager};
+use crate::domain::peer::{Peer, PeerManager};
 use dtchat_backend::dtchat::ChatModel;
 use eframe::egui;
 use egui::ComboBox;
-use socket_engine::endpoint::Endpoint;
+use socket_engine::endpoint::{Endpoint, EndpointProto};
 use std::sync::{Arc, Mutex};
 
 pub struct MessageForge {
     pub input_text: String,
     pub selected_peer: Option<Peer>,
-    pub selected_protocol: Endpoint,
+    pub selected_protocol: EndpointProto,
     pub pbat_enabled: bool,
 }
 
@@ -17,12 +17,12 @@ impl MessageForge {
         Self {
             input_text: String::new(),
             selected_peer: None,
-            selected_protocol: Endpoint::Tcp(String::new()), // Default TCP
+            selected_protocol: EndpointProto::Tcp, // Default TCP
             pbat_enabled: false,
         }
     }
 
-    fn get_available_protocols(&self) -> Vec<String> {
+    fn get_available_protocols(&self) -> Vec<EndpointProto> {
         if let Some(peer) = &self.selected_peer {
             peer.get_available_protocols()
         } else {
@@ -49,16 +49,11 @@ impl MessageForge {
 
         if self.selected_peer.is_some() {
             let available_protocols = self.get_available_protocols();
-            let selected_protocol_str =
-                EndpointConfig::endpoint_to_protocol(&self.selected_protocol);
-            if !available_protocols.contains(&selected_protocol_str.to_string())
+
+            if !available_protocols.contains(&self.selected_protocol)
                 && !available_protocols.is_empty()
             {
-                if let Some(endpoint) =
-                    EndpointConfig::protocol_to_endpoint(&available_protocols[0])
-                {
-                    self.selected_protocol = endpoint;
-                }
+                self.selected_protocol = available_protocols[0].clone();
             }
         }
 
@@ -102,20 +97,15 @@ impl MessageForge {
                 let available_protocols = self.get_available_protocols();
                 ComboBox::from_id_salt("protocol_selector")
                     .width(200.0)
-                    .selected_text(EndpointConfig::endpoint_to_protocol(
-                        &self.selected_protocol,
-                    ))
+                    .selected_text(self.selected_protocol.to_string())
                     .show_ui(ui, |ui| {
                         for protocol in &available_protocols {
-                            let is_selected =
-                                EndpointConfig::endpoint_to_protocol(&self.selected_protocol)
-                                    == *protocol;
-                            if ui.selectable_label(is_selected, protocol.clone()).clicked() {
-                                if let Some(endpoint) =
-                                    EndpointConfig::protocol_to_endpoint(protocol)
-                                {
-                                    self.selected_protocol = endpoint;
-                                }
+                            let is_selected = self.selected_protocol == *protocol;
+                            if ui
+                                .selectable_label(is_selected, protocol.to_string())
+                                .clicked()
+                            {
+                                self.selected_protocol = protocol.clone();
                             }
                         }
                     });
@@ -144,11 +134,10 @@ impl MessageForge {
                 if let Some(peer) = &self.selected_peer {
                     let content = self.input_text.trim();
                     if !content.is_empty() {
-                        let protocol_str =
-                            EndpointConfig::endpoint_to_protocol(&self.selected_protocol);
-                        if let Some(endpoint) = peer_manager
-                            .find_endpoint_for_peer_with_protocol(&peer.uuid, protocol_str)
-                        {
+                        if let Some(endpoint) = peer_manager.find_endpoint_for_peer_with_protocol(
+                            &peer.uuid,
+                            self.selected_protocol.clone(),
+                        ) {
                             if let Ok(mut model) = chat_model.lock() {
                                 model.send_to_peer(
                                     &content.to_string(),
@@ -169,24 +158,19 @@ impl MessageForge {
             ui.checkbox(&mut self.pbat_enabled, "Enable PBAT");
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if let Some(peer) = &self.selected_peer {
-                    let protocol_str =
-                        EndpointConfig::endpoint_to_protocol(&self.selected_protocol);
-                    if let Some(endpoint) =
-                        peer_manager.find_endpoint_for_peer_with_protocol(&peer.uuid, protocol_str)
-                    {
-                        let address = match endpoint {
-                            Endpoint::Tcp(addr) => addr,
-                            Endpoint::Udp(addr) => addr,
-                            Endpoint::Bp(addr) => addr,
-                        };
+                    if let Some(endpoint) = peer_manager.find_endpoint_for_peer_with_protocol(
+                        &peer.uuid,
+                        self.selected_protocol.clone(),
+                    ) {
+                        let address = endpoint.endpoint;
                         ui.colored_label(
                             egui::Color32::GRAY,
-                            format!("{} via {} ({})", peer.name, protocol_str, address),
+                            format!("{} via {} ({})", peer.name, self.selected_protocol, address),
                         );
                     } else {
                         ui.colored_label(
                             egui::Color32::GRAY,
-                            format!("{} via {}", peer.name, protocol_str),
+                            format!("{} via {}", peer.name, self.selected_protocol),
                         );
                     }
                 }
