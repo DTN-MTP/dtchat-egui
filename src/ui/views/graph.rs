@@ -102,7 +102,7 @@ impl MessageGraphView {
         message: &ChatMessage,
         y_position: f64,
         now: f64,
-    ) -> (BoxElem, String, Color32, String) {
+    ) -> (BoxElem, String, Color32, String, f64, f64) {
         let tx = message.send_time.timestamp_millis() as f64;
 
         // Nom de la boîte simplifié sans emoji
@@ -157,13 +157,7 @@ impl MessageGraphView {
 
         let box_elem = BoxElem::new(
             y_position,
-            BoxSpread::new(
-                start_time,
-                start_time,
-                start_time + (end_time - start_time) / 2.0,
-                end_time,
-                end_time,
-            ),
+            BoxSpread::new(start_time, start_time, start_time, end_time, end_time),
         )
         .name(box_name);
 
@@ -172,6 +166,8 @@ impl MessageGraphView {
             message.sender_uuid.clone(),
             status_color,
             status_text,
+            start_time,
+            end_time,
         )
     }
 
@@ -208,13 +204,21 @@ impl MessageGraphView {
             .iter()
             .filter(|msg| self.should_show_message(msg))
             .collect();
-
+        let mut first_message = now;
+        let mut last_message = now;
         // Group messages by sender
         let mut boxes_by_participant: HashMap<String, Vec<(BoxElem, Color32, String)>> =
             HashMap::new();
         for (index, message) in filtered_messages.iter().enumerate() {
-            let (box_elem, sender_uuid, status_color, status_text) =
+            let (box_elem, sender_uuid, status_color, status_text, from, to) =
                 self.create_box_element(message, index as f64, now);
+            if from < first_message {
+                first_message = from;
+            }
+            if to > last_message {
+                last_message = from;
+            }
+
             boxes_by_participant
                 .entry(sender_uuid)
                 .or_insert(Vec::new())
@@ -231,11 +235,12 @@ impl MessageGraphView {
         Plot::new("DTChat Timeline")
             .allow_zoom(true)
             .allow_drag(true)
-            .legend(Legend::default().position(egui_plot::Corner::RightTop))
+            .legend(Legend::default().position(egui_plot::Corner::LeftTop))
             .show_x(true)
             .show_y(false)
             .include_y(-0.5)
             .include_y(num_messages + 0.5)
+            .include_x(last_message + (last_message - first_message) * 0.2)
             .auto_reset(reset_requested)
             .x_axis_formatter(|mark, _range| {
                 DateTime::<Utc>::from_timestamp_millis(mark.value as i64)
