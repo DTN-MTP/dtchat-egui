@@ -2,9 +2,9 @@ use crate::domain::peer::{Peer, PeerManager};
 use chrono::{DateTime, Local, Utc};
 use dtchat_backend::message::{ChatMessage, MessageStatus};
 use egui::Color32;
-use egui_plot::{BoxElem, BoxPlot, BoxSpread, Legend, Plot, VLine};
+use egui_plot::{AxisHints, BoxElem, BoxPlot, BoxSpread, GridMark, Legend, Plot, VLine};
 use std::collections::{HashMap, HashSet, VecDeque};
-
+use std::ops::RangeInclusive;
 #[derive(Clone)]
 pub struct MessageGraphView {
     show_current_time: bool,
@@ -64,7 +64,7 @@ impl MessageGraphView {
         // Helper function to find peer and get name
         let get_peer_name = |uuid: &str| -> String {
             if uuid == local_peer_uuid {
-                "Moi".to_string()
+                "Me".to_string()
             } else {
                 peers
                     .iter()
@@ -187,6 +187,23 @@ impl MessageGraphView {
         local_peer_uuid: &str,
         peer_manager: &PeerManager,
     ) {
+        let make_time_formatter = |show_date: bool, show_time: bool, sep: Option<String>| {
+            move |x: GridMark, _range: &RangeInclusive<f64>| {
+                let datetime = DateTime::<Utc>::from_timestamp_millis(x.value as i64).unwrap();
+                let sep_cloned = sep.clone();
+                ts_to_str(&datetime, show_date, show_time, sep_cloned)
+            }
+        };
+
+        let x_axes = vec![
+            AxisHints::new_x()
+                .formatter(make_time_formatter(true, false, None))
+                .placement(egui_plot::VPlacement::Top),
+            AxisHints::new_x()
+                .formatter(make_time_formatter(false, true, None))
+                .placement(egui_plot::VPlacement::Bottom),
+        ];
+
         let now = Local::now().timestamp_millis() as f64;
         let peers = peer_manager.peers();
 
@@ -241,13 +258,17 @@ impl MessageGraphView {
             .include_y(-0.5)
             .include_y(num_messages + 0.5)
             .include_x(last_message + (last_message - first_message) * 0.2)
+            .custom_x_axes(x_axes)
+            .custom_y_axes(vec![])
             .auto_reset(reset_requested)
-            .x_axis_formatter(|mark, _range| {
-                DateTime::<Utc>::from_timestamp_millis(mark.value as i64)
-                    .map(|dt| dt.with_timezone(&Local).format("%H:%M:%S").to_string())
-                    .unwrap_or_else(|| format!("{:.0}", mark.value))
+            .label_formatter(|name, value| {
+                if !name.is_empty() {
+                    format!("{}: {:.*}%", name, 1, value.y)
+                } else {
+                    let value = DateTime::<Utc>::from_timestamp_millis(value.x as i64).unwrap();
+                    ts_to_str(&value, false, true, None).to_string()
+                }
             })
-            .y_axis_formatter(|_mark, _range| String::new())
             .height(plot_height)
             .show(ui, |plot_ui| {
                 if self.show_current_time {
