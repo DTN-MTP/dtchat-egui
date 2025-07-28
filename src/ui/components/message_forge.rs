@@ -111,7 +111,7 @@ impl MessageForge {
             let send_button = egui::Button::new("Send")
                 .fill(egui::Color32::from_rgb(52, 144, 220))
                 .corner_radius(4.0)
-                .min_size(egui::Vec2::new(60.0, 28.0));
+                .min_size(egui::Vec2::new(60.0, 24.0));
 
             let should_send = ui.add(send_button).clicked()
                 || (response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)));
@@ -135,6 +135,7 @@ impl MessageForge {
                         }
                     }
                 }
+                response.request_focus();
             }
         });
 
