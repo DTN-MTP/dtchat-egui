@@ -1,12 +1,14 @@
 use crate::domain::peer::{Peer, PeerManager};
 use chrono::{DateTime, Local, Utc};
 use dtchat_backend::message::{ChatMessage, MessageStatus};
+use egui::gui_zoom::zoom_in;
 use egui::Color32;
 use egui_plot::{AxisHints, BoxElem, BoxPlot, BoxSpread, GridMark, Legend, Plot, VLine};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::ops::RangeInclusive;
 #[derive(Clone)]
 pub struct MessageGraphView {
+    auto_bounds: bool,
     show_current_time: bool,
     active_participants: HashMap<String, String>,
     filtered_participants: HashSet<String>,
@@ -47,6 +49,7 @@ pub fn ts_to_str(
 impl MessageGraphView {
     pub fn new() -> Self {
         Self {
+            auto_bounds: true,
             show_current_time: true,
             active_participants: HashMap::new(),
             filtered_participants: HashSet::new(),
@@ -213,13 +216,15 @@ impl MessageGraphView {
 
         self.update_participants(messages, peers, local_peer_uuid);
 
-        let reset_requested = ui
-            .horizontal(|ui| {
-                ui.add_space(20.0); // Padding left de 20px
-                ui.button("Reset").clicked()
-            })
-            .inner;
-        ui.add_space(3.0); // Marge bottom
+        ui.horizontal(|ui| {
+            ui.checkbox(&mut self.auto_bounds, "Auto_bounds");
+        });
+        // drag must cancel autobound
+        ui.input(|i| {
+            if i.pointer.is_decidedly_dragging() || i.raw_scroll_delta.y != 0.0 {
+                self.auto_bounds = false;
+            }
+        });
 
         let filtered_messages: Vec<&ChatMessage> = messages
             .iter()
@@ -264,7 +269,8 @@ impl MessageGraphView {
             .include_x(last_message + (last_message - first_message) * 0.2)
             .custom_x_axes(x_axes)
             .custom_y_axes(vec![])
-            .auto_reset(reset_requested)
+            // .auto_reset(reset_requested)
+            // .auto_bounds(self.auto_bounds)
             .label_formatter(|name, value| {
                 if !name.is_empty() {
                     format!("{}: {:.*}%", name, 1, value.y)
@@ -275,6 +281,7 @@ impl MessageGraphView {
             })
             .height(plot_height)
             .show(ui, |plot_ui| {
+                plot_ui.set_auto_bounds(self.auto_bounds);
                 if self.show_current_time {
                     plot_ui.vline(VLine::new(now).color(Color32::RED).name("Current Time"));
                 }

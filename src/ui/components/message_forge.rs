@@ -58,59 +58,45 @@ impl MessageForge {
         }
 
         ui.add_space(8.0);
-        egui::Grid::new("message_forge_grid")
-            .num_columns(2)
-            .spacing([8.0, 8.0])
-            .show(ui, |ui| {
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label("To:");
-                });
-
-                let selected_peer = self.selected_peer.clone();
-                ComboBox::from_id_salt("peer_selector")
-                    .width(200.0)
-                    .selected_text(
-                        selected_peer
-                            .as_ref()
-                            .map(|p| p.name.clone())
-                            .unwrap_or_else(|| "Select peer".to_string()),
-                    )
-                    .show_ui(ui, |ui| {
-                        for peer in &available_peers {
-                            if ui
-                                .selectable_label(
-                                    selected_peer.as_ref().map(|p| &p.uuid) == Some(&peer.uuid),
-                                    peer.name.clone(),
-                                )
-                                .clicked()
-                            {
-                                self.selected_peer = Some((*peer).clone());
-                            }
+        ui.horizontal(|ui| {
+            ui.label("To:");
+            let selected_peer = self.selected_peer.clone();
+            ComboBox::from_id_salt("peer_selector")
+                .selected_text(
+                    selected_peer
+                        .as_ref()
+                        .map(|p| p.name.clone())
+                        .unwrap_or_else(|| "Select peer".to_string()),
+                )
+                .show_ui(ui, |ui| {
+                    for peer in &available_peers {
+                        if ui
+                            .selectable_label(
+                                selected_peer.as_ref().map(|p| &p.uuid) == Some(&peer.uuid),
+                                peer.name.clone(),
+                            )
+                            .clicked()
+                        {
+                            self.selected_peer = Some((*peer).clone());
                         }
-                    });
-                ui.end_row();
-
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label("Protocol:");
+                    }
                 });
-
-                let available_protocols = self.get_available_protocols();
-                ComboBox::from_id_salt("protocol_selector")
-                    .width(200.0)
-                    .selected_text(self.selected_protocol.to_string())
-                    .show_ui(ui, |ui| {
-                        for protocol in &available_protocols {
-                            let is_selected = self.selected_protocol == *protocol;
-                            if ui
-                                .selectable_label(is_selected, protocol.to_string())
-                                .clicked()
-                            {
-                                self.selected_protocol = protocol.clone();
-                            }
+            ui.label("Protocol:");
+            let available_protocols = self.get_available_protocols();
+            ComboBox::from_id_salt("protocol_selector")
+                .selected_text(self.selected_protocol.to_string())
+                .show_ui(ui, |ui| {
+                    for protocol in &available_protocols {
+                        let is_selected = self.selected_protocol == *protocol;
+                        if ui
+                            .selectable_label(is_selected, protocol.to_string())
+                            .clicked()
+                        {
+                            self.selected_protocol = protocol.clone();
                         }
-                    });
-                ui.end_row();
-            });
+                    }
+                });
+        });
 
         ui.add_space(8.0);
 
