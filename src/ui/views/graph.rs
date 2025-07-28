@@ -130,12 +130,16 @@ impl MessageGraphView {
         // Calcul de l'étendue de la boîte selon l'état du message
         let (start_time, end_time) = match &message.status {
             MessageStatus::ReceivedByPeer => {
+                let mut send_time = tx;
                 // ACK reçu - largeur = délai réel
-                let ack_time = message
-                    .send_completed
-                    .map(|t| t.timestamp_millis() as f64)
-                    .unwrap_or(tx + 1000.0);
-                (tx, ack_time)
+                let receive_time = message
+                    .receive_time
+                    .map(|t| {
+                        send_time -= 500.0;
+                        t.timestamp_millis() as f64
+                    })
+                    .unwrap_or(tx + 500.0);
+                (send_time, receive_time)
             }
             MessageStatus::Received => {
                 // Message reçu d'ailleurs
