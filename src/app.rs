@@ -105,20 +105,20 @@ impl EventHandler {
                         format!("Received: {}", safe_message_id_display(&msg.uuid)),
                     );
                 }
-                ChatAppInfoEvent::AckSent(msg_id, peer_id) => {
+                ChatAppInfoEvent::AckSent(msg, peer_id) => {
                     self.add_app_event(
                         EventLevel::Info,
                         format!(
                             "ACK sent for {} to {}",
-                            safe_message_id_display(&msg_id),
+                            safe_message_id_display(&msg.uuid),
                             peer_id
                         ),
                     );
                 }
-                ChatAppInfoEvent::AckReceived(msg_id) => {
+                ChatAppInfoEvent::AckReceived(msg) => {
                     self.add_app_event(
                         EventLevel::Info,
-                        format!("ACK received for {}", safe_message_id_display(&msg_id)),
+                        format!("ACK received for {}", safe_message_id_display(&msg.uuid)),
                     );
                 }
             },
