@@ -83,7 +83,6 @@ pub struct UIState {
 
 impl UIState {
     pub fn new(peer_manager: PeerManager, messages: Vec<ChatMessage>) -> Self {
-        println!("refresh??");
         Self {
             message_forge: MessageForge::new(),
             message_settings_bar: MessageSettingsBar::new(),

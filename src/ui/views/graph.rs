@@ -106,8 +106,6 @@ impl MessageGraphView {
         y_position: f64,
         now: f64,
     ) -> (BoxElem, String, Color32, String, f64, f64) {
-        let tx = message.send_time.timestamp_millis() as f64;
-
         // Nom de la boîte simplifié sans emoji
         let box_name = self.truncate_text(&message.text, 30);
 
@@ -130,35 +128,39 @@ impl MessageGraphView {
             MessageStatus::Received => Color32::LIGHT_BLUE,
         };
 
+
+        let (sent, pbat, recv) = message.get_shipment_status_timestamps();
         // Calcul de l'étendue de la boîte selon l'état du message
         let (start_time, end_time) = match &message.status {
             MessageStatus::ReceivedByPeer => {
-                let mut send_time = tx;
-                // ACK reçu - largeur = délai réel
-                let receive_time = message
-                    .receive_time
-                    .map(|t| {
-                        send_time -= 500.0;
-                        t.timestamp_millis() as f64
-                    })
-                    .unwrap_or(tx + 500.0);
-                (send_time, receive_time)
+                // let mut send_time = tx;
+                // // ACK reçu - largeur = délai réel
+                // let receive_time = message
+                //     .receive_time
+                //     .map(|t| {
+                //         send_time -= 500.0;
+                //         t.timestamp_millis() as f64
+                //     })
+                //     .unwrap_or(tx + 500.0);
+                // (send_time, receive_time)
+
+                (sent as f64, recv.unwrap() as f64)
             }
             MessageStatus::Received => {
                 // Message reçu d'ailleurs
-                let rx_time = message
-                    .receive_time
-                    .map(|t| t.timestamp_millis() as f64)
-                    .unwrap_or(tx);
-                (tx, rx_time)
+                // let rx_time = message
+                //     .receive_time
+                //     .map(|t| t.timestamp_millis() as f64)
+                //     .unwrap_or(tx);
+                (sent as f64, recv.unwrap() as f64)
             }
             MessageStatus::Failed => {
                 // Message échoué - boîte très courte, animation arrêtée
-                (tx, tx + 100.0)
+                ((sent - 50) as f64, (sent + 50) as f64)
             }
-            _ => {
+            MessageStatus::Sent | MessageStatus::Sending => {
                 // Pas d'ACK encore - animer la boîte
-                (tx, now)
+                (sent as f64, pbat.unwrap() as f64)
             }
         };
 

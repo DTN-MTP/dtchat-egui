@@ -128,6 +128,7 @@ impl MessageForge {
                                 model.send_to_peer(
                                     &content.to_string(),
                                     &"room".to_string(),
+                                    peer.uuid.clone(),
                                     &endpoint,
                                 );
                                 self.input_text.clear();
