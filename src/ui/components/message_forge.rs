@@ -142,7 +142,10 @@ impl MessageForge {
         ui.add_space(4.0);
 
         ui.horizontal(|ui| {
-            ui.checkbox(&mut self.pbat_enabled, "Enable Arrival Time Prediction (A-SABR)");
+            ui.checkbox(
+                &mut self.pbat_enabled,
+                "Enable Arrival Time Prediction (A-SABR)",
+            );
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if let Some(peer) = &self.selected_peer {
                     if let Some(endpoint) = peer_manager.find_endpoint_for_peer_with_protocol(
@@ -152,7 +155,10 @@ impl MessageForge {
                         let address = endpoint.endpoint;
                         ui.colored_label(
                             egui::Color32::GRAY,
-                            format!("to {} via {} ({})", peer.name, self.selected_protocol, address),
+                            format!(
+                                "to {} via {} ({})",
+                                peer.name, self.selected_protocol, address
+                            ),
                         );
                     } else {
                         ui.colored_label(

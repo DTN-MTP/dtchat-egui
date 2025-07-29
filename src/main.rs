@@ -27,7 +27,6 @@ fn convert_peer_to_backend(domain_peer: &Peer) -> BackendPeer {
     }
 }
 
-
 fn main() -> Result<(), Box<dyn Error>> {
     let event_handler = Arc::new(Mutex::new(app::EventHandler::new(100)));
 
