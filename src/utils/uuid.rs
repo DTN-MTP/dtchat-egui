@@ -1,9 +1,3 @@
-use uuid::Uuid;
-
-// pub fn generate_uuid() -> String {
-//     Uuid::new_v4().to_string()
-// }
-
 pub fn safe_message_id_display(id: &str) -> &str {
     if id.len() >= 8 {
         &id[..8]

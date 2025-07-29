@@ -1,7 +1,6 @@
 use crate::domain::peer::{Peer, PeerManager};
 use dtchat_backend::message::ChatMessage;
 use eframe::egui;
-use std::collections::VecDeque;
 
 pub struct MessageListView {
     pub max_messages_displayed: usize,

@@ -1,10 +1,9 @@
 use crate::domain::peer::{Peer, PeerManager};
 use chrono::{DateTime, Local, Utc};
 use dtchat_backend::message::{ChatMessage, MessageStatus};
-use egui::gui_zoom::zoom_in;
 use egui::Color32;
 use egui_plot::{AxisHints, BoxElem, BoxPlot, BoxSpread, GridMark, Legend, Plot, VLine};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::ops::RangeInclusive;
 #[derive(Clone)]
 pub struct MessageGraphView {
@@ -13,7 +12,7 @@ pub struct MessageGraphView {
     active_participants: HashMap<String, String>,
     filtered_participants: HashSet<String>,
 }
-
+#[allow(dead_code)]
 trait AutoReset {
     fn auto_reset(self, auto: bool) -> Self;
 }

@@ -7,13 +7,12 @@ edition = "2021"
 egui = "0.31.0"
 eframe = "0.31.0"
 serde = { version = "1.0.217", features = ["derive"] }
-socket-engine = { path = "../socket-engine" }
-dtchat-backend = { path = "../dtchat-backend" }
+socket-engine = { git = "https://github.com/DTN-MTP/socket-engine" }
+dtchat-backend = { git = "https://github.com/DTN-MTP/dtchat-backend" }
 async-trait = "0.1"
 once_cell = "1.17"
 egui_plot = "0.31.0" # need to leave it at 0.31.0 for now
 uuid = { version = "1.6.1", features = ["v4"] }
-a_sabr = { git ="https://github.com/DTN-MTP/A-SABR.git", branch = "main", features = ["contact_work_area", "contact_suppression"] }
 chrono = "0.4.41"
 serde_yaml = "0.9.33"
 

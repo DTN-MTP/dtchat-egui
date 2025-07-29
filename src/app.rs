@@ -9,7 +9,6 @@ use dtchat_backend::event::{
 };
 use eframe::{egui, App};
 use egui::CentralPanel;
-use socket_engine::endpoint::Endpoint;
 use socket_engine::event::{ConnectionEvent, DataEvent};
 
 use crate::domain::peer::{Peer, PeerManager};
@@ -270,7 +269,7 @@ impl DTChatApp {
 }
 
 impl App for DTChatApp {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if !self.context_initialized {
             if let Ok(mut handler) = self.event_handler.lock() {
                 handler.set_context(ctx.clone());

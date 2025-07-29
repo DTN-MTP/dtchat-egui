@@ -2,7 +2,7 @@ use crate::domain::peer::{Peer, PeerManager};
 use dtchat_backend::dtchat::ChatModel;
 use eframe::egui;
 use egui::ComboBox;
-use socket_engine::endpoint::{Endpoint, EndpointProto};
+use socket_engine::endpoint::EndpointProto;
 use std::sync::{Arc, Mutex};
 
 pub struct MessageForge {
