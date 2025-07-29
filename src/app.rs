@@ -46,6 +46,7 @@ pub struct EventHandler {
     pub app_events: VecDeque<DisplayEvent>,
     pub max_events_per_category: usize,
     pub ctx: Option<egui::Context>,
+    pub refresh_model_request: bool,
 }
 
 impl EventHandler {
@@ -55,6 +56,7 @@ impl EventHandler {
             app_events: VecDeque::new(),
             max_events_per_category,
             ctx: None,
+            refresh_model_request: true,
         }
     }
 
@@ -230,6 +232,7 @@ impl EventHandler {
         if let Some(ctx) = &self.ctx {
             ctx.request_repaint();
         }
+        self.refresh_model_request = true;
     }
 }
 
@@ -240,10 +243,10 @@ impl AppEventObserver for EventHandler {
 }
 
 pub struct DTChatApp {
-    pub peer_manager: PeerManager,
     pub event_handler: Arc<Mutex<EventHandler>>,
     pub chat_model: Arc<Mutex<ChatModel>>,
     pub ui: UIState,
+    // TODO: those 2 must be retrieve from the model
     context_initialized: bool,
 }
 
@@ -255,10 +258,12 @@ impl DTChatApp {
         event_handler: Arc<Mutex<EventHandler>>,
     ) -> Self {
         Self {
-            peer_manager: PeerManager::new(local_peer.clone(), dist_peers),
             event_handler,
             chat_model,
-            ui: UIState::new(),
+            ui: UIState::new(
+                PeerManager::new(local_peer.clone(), dist_peers.clone()),
+                vec![],
+            ),
             context_initialized: false,
         }
     }
@@ -274,13 +279,16 @@ impl App for DTChatApp {
             self.context_initialized = true;
         }
 
+        // Update the mirror of the model if something changed
+        if let Ok(mut handler) = self.event_handler.lock() {
+            if handler.refresh_model_request {
+                handler.refresh_model_request = false;
+                self.ui.refresh_from_model(&self.chat_model);
+            }
+        }
+
         CentralPanel::default().show(ctx, |ui| {
-            self.ui.show(
-                ui,
-                &self.peer_manager,
-                &self.event_handler,
-                &self.chat_model,
-            );
+            self.ui.show(ui, &self.event_handler, &self.chat_model);
         });
     }
 }

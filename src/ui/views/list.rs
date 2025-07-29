@@ -21,7 +21,7 @@ impl MessageListView {
     pub fn show(
         &mut self,
         ui: &mut egui::Ui,
-        messages: &VecDeque<ChatMessage>,
+        messages: &Vec<ChatMessage>,
         local_peer: &Peer,
         peer_manager: &PeerManager,
     ) {

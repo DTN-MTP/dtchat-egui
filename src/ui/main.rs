@@ -11,7 +11,6 @@ use dtchat_backend::message::{
     filter_by_network_endpoint, sort_with_strategy, ChatMessage, SortStrategy,
 };
 use eframe::egui;
-use egui::debug_text::print;
 use egui::{CentralPanel, TopBottomPanel, Ui};
 use socket_engine::endpoint::EndpointProto;
 use std::collections::VecDeque;
@@ -71,45 +70,50 @@ pub struct UIState {
     pub views: Views,
     pub current_view: ViewType,
     pub header: Header,
-    pub request_sort_strategy: Option<SortStrategy>,
-    pub selected_protocol_filter: Option<ProtoFilter>,
-    pub request_sort: bool,
+    pub sort_strategy: SortStrategy,
+    pub request_sort_strategy: bool,
+    pub protocol_filter: ProtoFilter,
+    pub request_protocol_filter: bool,
+
+    // data
+    pub messages: Vec<ChatMessage>,
+    pub messages_to_display: Vec<ChatMessage>,
+    peer_manager: PeerManager,
 }
 
-impl Default for UIState {
-    fn default() -> Self {
+impl UIState {
+    pub fn new(peer_manager: PeerManager, messages: Vec<ChatMessage>) -> Self {
+        println!("refresh??");
         Self {
             message_forge: MessageForge::new(),
             message_settings_bar: MessageSettingsBar::new(),
             views: Views::new(),
             current_view: ViewType::MessageGraph,
             header: Header::new(),
-            request_sort_strategy: None,
-            selected_protocol_filter: None,
-            request_sort: false,
+            request_sort_strategy: true,
+            sort_strategy: SortStrategy::Standard,
+            request_protocol_filter: true,
+            protocol_filter: ProtoFilter::NoFilter,
+            messages_to_display: vec![],
+            messages,
+            peer_manager,
         }
     }
-}
 
-impl UIState {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn refresh_from_model(&mut self, chat_model: &Arc<Mutex<ChatModel>>) {
+        self.messages = chat_model.lock().unwrap().get_all_messages();
+        self.request_protocol_filter = true;
+        self.request_sort_strategy = true;
     }
 
     pub fn show(
         &mut self,
         ui: &mut Ui,
-        peer_manager: &PeerManager,
         events: &Arc<Mutex<EventHandler>>,
         chat_model: &Arc<Mutex<ChatModel>>,
     ) -> Option<(String, String)> {
-        let local_peer = peer_manager.local_peer();
-        let messages = if let Ok(model) = chat_model.lock() {
-            VecDeque::from(model.get_all_messages())
-        } else {
-            VecDeque::new()
-        };
-
+        let peer_manager = &self.peer_manager;
+        let local_peer = self.peer_manager.local_peer();
         let (network_events, app_events) = if let Ok(handler) = events.lock() {
             (
                 handler.network_events().clone(),
@@ -127,8 +131,10 @@ impl UIState {
             self.message_settings_bar.show(
                 ui,
                 &mut self.current_view,
+                &mut self.sort_strategy,
                 &mut self.request_sort_strategy,
-                &mut self.selected_protocol_filter,
+                &mut self.protocol_filter,
+                &mut self.request_protocol_filter,
                 peer_manager,
                 &local_peer,
             );
@@ -146,47 +152,36 @@ impl UIState {
 
         CentralPanel::default().show_inside(ui, |ui| {
             // Préparer les messages avec la stratégie de tri appropriée
-            let sorted_messages = {
-                let mut msg_vec: Vec<ChatMessage> = messages.iter().cloned().collect();
-
-                // Appliquer le filtre par protocole d'abord
-                // TODO: we sort at each frame, we should "take()" self.selected_protocol_filter.
-                if let Some(filtering) = &self.selected_protocol_filter {
-                    // println!("filter requested..");
-
-                    if let ProtoFilter::Filter(by_proto) = filtering {
-                        println!("filtering by proto..");
-                        msg_vec = filter_by_network_endpoint(&msg_vec, by_proto.clone());
+            if self.request_protocol_filter {
+                self.messages_to_display = match &self.protocol_filter {
+                    ProtoFilter::NoFilter => self.messages.clone(),
+                    ProtoFilter::Filter(by_proto) => {
+                        filter_by_network_endpoint(&self.messages, by_proto.clone())
                     }
-                }
-
-                // Ensuite appliquer le tri
-                // TODO: we sort at each frame, we should "take()" self.request_sort_strategy.
-                if let Some(strat) = &self.request_sort_strategy {
-                    sort_with_strategy(&mut msg_vec, strat.clone());
-                    // println!("sort messages..");
-                }
-                // Reconvertir en VecDeque
-                let mut sorted_deque = VecDeque::new();
-                for msg in msg_vec {
-                    sorted_deque.push_back(msg);
-                }
-                sorted_deque
-            };
+                };
+                self.request_protocol_filter = false;
+            }
+            if self.request_sort_strategy {
+                sort_with_strategy(&mut self.messages_to_display, self.sort_strategy.clone());
+                self.request_sort_strategy = false;
+            }
 
             match self.current_view {
                 ViewType::MessageGraph => {
                     self.views.message_graph.show(
                         ui,
-                        &sorted_messages,
+                        &self.messages_to_display,
                         &local_peer.uuid,
                         &peer_manager,
                     );
                 }
                 ViewType::MessageList => {
-                    self.views
-                        .message_list
-                        .show(ui, &sorted_messages, &local_peer, &peer_manager);
+                    self.views.message_list.show(
+                        ui,
+                        &self.messages_to_display,
+                        &local_peer,
+                        &peer_manager,
+                    );
                 }
                 ViewType::Settings => {
                     self.views.settings.show(ui, &network_events, &app_events);

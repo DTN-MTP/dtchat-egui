@@ -5,9 +5,7 @@ use egui::{ComboBox, Ui};
 use socket_engine::endpoint::EndpointProto;
 
 pub struct MessageSettingsBar {
-    last_sort_strategy: SortStrategy,
     last_sort_strategy_peer: Option<Peer>,
-    last_proto_filter: Option<ProtoFilter>,
 }
 
 fn get_str_for_strat(local_peer_uuid: String, peer: Option<Peer>, strat: &SortStrategy) -> String {
@@ -26,9 +24,7 @@ fn get_str_for_strat(local_peer_uuid: String, peer: Option<Peer>, strat: &SortSt
 impl MessageSettingsBar {
     pub fn new() -> Self {
         Self {
-            last_sort_strategy: SortStrategy::Standard,
             last_sort_strategy_peer: None,
-            last_proto_filter: None,
         }
     }
 
@@ -36,8 +32,12 @@ impl MessageSettingsBar {
         &mut self,
         ui: &mut Ui,
         current_view: &mut ViewType,
-        request_sort_with_strategy: &mut Option<SortStrategy>,
-        request_protocol_filter: &mut Option<ProtoFilter>,
+        // request_sort_with_strategy: &mut Option<SortStrategy>,
+        // request_protocol_filter: &mut Option<ProtoFilter>,
+        sort_strategy: &mut SortStrategy,
+        request_sort_strategy: &mut bool,
+        protocol_filter: &mut ProtoFilter,
+        request_protocol_filter: &mut bool,
         peer_manager: &PeerManager,
         local_peer: &Peer,
     ) {
@@ -67,54 +67,54 @@ impl MessageSettingsBar {
             if *current_view != ViewType::Settings {
                 ui.separator();
 
-                let previous_filter = self.last_proto_filter.clone();
+                let previous_filter = protocol_filter.clone();
                 ui.label("Protocol:");
                 ComboBox::from_id_salt("protocol_filter")
                     .selected_text(
-                        &self.last_proto_filter
-                            .as_ref()
-                            .map(|p| p.to_string())
-                            .unwrap_or("All".to_string()),
+                        protocol_filter.to_string(),
                     )
                     .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut self.last_proto_filter, None, "All");
+                        let mut opt = ProtoFilter::NoFilter;
+                        ui.selectable_value( protocol_filter, opt.clone(), opt.to_string());
+                        opt = ProtoFilter::Filter(EndpointProto::Tcp);
                         ui.selectable_value(
-                            &mut self.last_proto_filter,
-                            Some(ProtoFilter::Filter(EndpointProto::Tcp)),
-                            EndpointProto::Tcp.to_string(),
+                            protocol_filter,
+                            opt.clone(),
+                            opt.to_string(),
                         );
+                        opt = ProtoFilter::Filter(EndpointProto::Udp);
                         ui.selectable_value(
-                            &mut self.last_proto_filter,
-                            Some(ProtoFilter::Filter(EndpointProto::Udp)),
-                            EndpointProto::Udp.to_string(),
+                             protocol_filter,
+                            opt.clone(),
+                            opt.to_string(),
                         );
+                        opt = ProtoFilter::Filter(EndpointProto::Bp);
                         ui.selectable_value(
-                            &mut self.last_proto_filter,
-                            Some(ProtoFilter::Filter(EndpointProto::Bp)),
-                            EndpointProto::Bp.to_string(),
+                             protocol_filter,
+                            opt.clone(),
+                            opt.to_string(),
                         );
                     });
 
                 // Trigger on selection change
-                if previous_filter != self.last_proto_filter {
-                    *request_protocol_filter = self.last_proto_filter.clone();
+                if previous_filter != *protocol_filter {
+                    *request_protocol_filter = true;
                 }
 
                 ui.separator();
 
                 ui.label("Sort strategy:");
-                ui.menu_button(get_str_for_strat(local_peer.uuid.clone(), self.last_sort_strategy_peer.clone(), &self.last_sort_strategy), |ui| {
+                ui.menu_button(get_str_for_strat(local_peer.uuid.clone(), self.last_sort_strategy_peer.clone(), sort_strategy), |ui| {
                         if ui.button("Standard").on_hover_text("Sorted by sending times").clicked() {
 
-                            *request_sort_with_strategy = Some(SortStrategy::Standard);
-                            self.last_sort_strategy = SortStrategy::Standard;
+                            *request_sort_strategy = true;
+                            *sort_strategy = SortStrategy::Standard;
                             self.last_sort_strategy_peer = None;
                             ui.close_menu();
                         }
                         if ui.button("Local").on_hover_text("Sorted by receiving time for the local peer and sending times for the other peers").clicked() {
-                            // locked_model.sort_messages(SortStrategy::Relative(local_peer.clone()));
-                            *request_sort_with_strategy = Some(SortStrategy::Relative(local_peer.uuid.clone()));
-                            self.last_sort_strategy = SortStrategy::Standard;
+                            *request_sort_strategy = true;
+                            *sort_strategy = SortStrategy::Relative(local_peer.uuid.clone());
                             self.last_sort_strategy_peer = Some(local_peer.clone());
                             ui.close_menu();
                         }
@@ -128,8 +128,8 @@ impl MessageSettingsBar {
                                 }
                              }
                              if let Some(ref peer) = clicked {
-                                *request_sort_with_strategy = Some(SortStrategy::Relative(peer.uuid.clone()));
-                                self.last_sort_strategy = SortStrategy::Relative(peer.uuid.clone());
+                                *request_sort_strategy = true;
+                                *sort_strategy = SortStrategy::Relative(peer.uuid.clone());
                                 self.last_sort_strategy_peer = Some(peer.clone());
                                 ui.close_menu();
                              }

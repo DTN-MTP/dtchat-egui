@@ -58,7 +58,7 @@ impl MessageGraphView {
 
     fn update_participants(
         &mut self,
-        messages: &VecDeque<ChatMessage>,
+        messages: &Vec<ChatMessage>,
         peers: &[Peer],
         local_peer_uuid: &str,
     ) {
@@ -190,7 +190,7 @@ impl MessageGraphView {
     pub fn show(
         &mut self,
         ui: &mut egui::Ui,
-        messages: &VecDeque<ChatMessage>,
+        messages: &Vec<ChatMessage>,
         local_peer_uuid: &str,
         peer_manager: &PeerManager,
     ) {
