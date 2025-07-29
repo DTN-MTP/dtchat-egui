@@ -11,6 +11,7 @@ use dtchat_backend::message::{
     filter_by_network_endpoint, sort_with_strategy, ChatMessage, SortStrategy,
 };
 use eframe::egui;
+use egui::debug_text::print;
 use egui::{CentralPanel, TopBottomPanel, Ui};
 use socket_engine::endpoint::EndpointProto;
 use std::collections::VecDeque;
@@ -49,14 +50,30 @@ impl Views {
     }
 }
 
+#[derive(Clone, PartialEq, Eq)]
+pub enum ProtoFilter {
+    NoFilter,
+    Filter(EndpointProto),
+}
+
+impl std::fmt::Display for ProtoFilter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ProtoFilter::NoFilter => write!(f, "All"),
+            ProtoFilter::Filter(proto) => write!(f, "{}", proto),
+        }
+    }
+}
+
 pub struct UIState {
     pub message_forge: MessageForge,
     pub message_settings_bar: MessageSettingsBar,
     pub views: Views,
     pub current_view: ViewType,
     pub header: Header,
-    pub selected_peer_for_relative: Option<String>,
-    pub selected_protocol_filter: Option<EndpointProto>,
+    pub request_sort_strategy: Option<SortStrategy>,
+    pub selected_protocol_filter: Option<ProtoFilter>,
+    pub request_sort: bool,
 }
 
 impl Default for UIState {
@@ -67,8 +84,9 @@ impl Default for UIState {
             views: Views::new(),
             current_view: ViewType::MessageGraph,
             header: Header::new(),
-            selected_peer_for_relative: None,
+            request_sort_strategy: None,
             selected_protocol_filter: None,
+            request_sort: false,
         }
     }
 }
@@ -109,10 +127,10 @@ impl UIState {
             self.message_settings_bar.show(
                 ui,
                 &mut self.current_view,
-                &mut self.selected_peer_for_relative,
+                &mut self.request_sort_strategy,
                 &mut self.selected_protocol_filter,
                 peer_manager,
-                &local_peer.uuid,
+                &local_peer,
             );
         });
 
@@ -132,17 +150,22 @@ impl UIState {
                 let mut msg_vec: Vec<ChatMessage> = messages.iter().cloned().collect();
 
                 // Appliquer le filtre par protocole d'abord
-                if let Some(filter_by) = &self.selected_protocol_filter {
-                    msg_vec = filter_by_network_endpoint(&msg_vec, filter_by.clone());
+                // TODO: we sort at each frame, we should "take()" self.selected_protocol_filter.
+                if let Some(filtering) = &self.selected_protocol_filter {
+                    // println!("filter requested..");
+
+                    if let ProtoFilter::Filter(by_proto) = filtering {
+                        println!("filtering by proto..");
+                        msg_vec = filter_by_network_endpoint(&msg_vec, by_proto.clone());
+                    }
                 }
 
                 // Ensuite appliquer le tri
-                if let Some(ref peer_uuid) = self.selected_peer_for_relative {
-                    sort_with_strategy(&mut msg_vec, SortStrategy::Relative(peer_uuid.clone()));
-                } else {
-                    sort_with_strategy(&mut msg_vec, SortStrategy::Standard);
+                // TODO: we sort at each frame, we should "take()" self.request_sort_strategy.
+                if let Some(strat) = &self.request_sort_strategy {
+                    sort_with_strategy(&mut msg_vec, strat.clone());
+                    // println!("sort messages..");
                 }
-
                 // Reconvertir en VecDeque
                 let mut sorted_deque = VecDeque::new();
                 for msg in msg_vec {

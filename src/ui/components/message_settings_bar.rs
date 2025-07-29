@@ -1,23 +1,45 @@
-use crate::domain::peer::PeerManager;
-use crate::ui::main::ViewType;
+use crate::domain::peer::{Peer, PeerManager};
+use crate::ui::main::{ProtoFilter, ViewType};
+use dtchat_backend::message::SortStrategy;
 use egui::{ComboBox, Ui};
 use socket_engine::endpoint::EndpointProto;
 
-pub struct MessageSettingsBar;
+pub struct MessageSettingsBar {
+    last_sort_strategy: SortStrategy,
+    last_sort_strategy_peer: Option<Peer>,
+    last_proto_filter: Option<ProtoFilter>,
+}
+
+fn get_str_for_strat(local_peer_uuid: String, peer: Option<Peer>, strat: &SortStrategy) -> String {
+    match strat {
+        SortStrategy::Standard => "Standard".to_string(),
+        SortStrategy::Relative(sort_for_uuid) => {
+            if local_peer_uuid == *sort_for_uuid {
+                "Local".to_string()
+            } else {
+                format!("Relative ({})", peer.unwrap().name)
+            }
+        }
+    }
+}
 
 impl MessageSettingsBar {
     pub fn new() -> Self {
-        Self
+        Self {
+            last_sort_strategy: SortStrategy::Standard,
+            last_sort_strategy_peer: None,
+            last_proto_filter: None,
+        }
     }
 
     pub fn show(
         &mut self,
         ui: &mut Ui,
         current_view: &mut ViewType,
-        selected_peer_for_relative: &mut Option<String>,
-        selected_protocol_filter: &mut Option<EndpointProto>,
+        request_sort_with_strategy: &mut Option<SortStrategy>,
+        request_protocol_filter: &mut Option<ProtoFilter>,
         peer_manager: &PeerManager,
-        local_peer_uuid: &str,
+        local_peer: &Peer,
     ) {
         ui.add_space(3.0);
         ui.horizontal(|ui| {
@@ -45,70 +67,79 @@ impl MessageSettingsBar {
             if *current_view != ViewType::Settings {
                 ui.separator();
 
-                // Sorting options
-                ui.label("Sort:");
-                ComboBox::from_id_salt("sort_selector")
-                    .selected_text(if let Some(ref uuid) = selected_peer_for_relative {
-                        if uuid == local_peer_uuid {
-                            "Me"
-                        } else {
-                            peer_manager
-                                .peers()
-                                .iter()
-                                .find(|p| &p.uuid == uuid)
-                                .map(|p| p.name.as_str())
-                                .unwrap_or("Unknown peer")
-                        }
-                    } else {
-                        "Standard"
-                    })
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(selected_peer_for_relative, None, "Standard");
-                        ui.selectable_value(
-                            selected_peer_for_relative,
-                            Some(local_peer_uuid.to_string()),
-                            "Relative (to me)",
-                        );
-
-                        for peer in peer_manager.peers() {
-                            if peer.uuid != local_peer_uuid {
-                                ui.selectable_value(
-                                    selected_peer_for_relative,
-                                    Some(peer.uuid.clone()),
-                                    format!("Relative ({})", peer.name),
-                                );
-                            }
-                        }
-                    });
-
-                ui.separator();
-
+                let previous_filter = self.last_proto_filter.clone();
                 ui.label("Protocol:");
                 ComboBox::from_id_salt("protocol_filter")
                     .selected_text(
-                        selected_protocol_filter
+                        &self.last_proto_filter
                             .as_ref()
                             .map(|p| p.to_string())
                             .unwrap_or("All".to_string()),
                     )
                     .show_ui(ui, |ui| {
-                        ui.selectable_value(selected_protocol_filter, None, "All");
+                        ui.selectable_value(&mut self.last_proto_filter, None, "All");
                         ui.selectable_value(
-                            selected_protocol_filter,
-                            Some(EndpointProto::Tcp),
+                            &mut self.last_proto_filter,
+                            Some(ProtoFilter::Filter(EndpointProto::Tcp)),
                             EndpointProto::Tcp.to_string(),
                         );
                         ui.selectable_value(
-                            selected_protocol_filter,
-                            Some(EndpointProto::Udp),
+                            &mut self.last_proto_filter,
+                            Some(ProtoFilter::Filter(EndpointProto::Udp)),
                             EndpointProto::Udp.to_string(),
                         );
                         ui.selectable_value(
-                            selected_protocol_filter,
-                            Some(EndpointProto::Bp),
+                            &mut self.last_proto_filter,
+                            Some(ProtoFilter::Filter(EndpointProto::Bp)),
                             EndpointProto::Bp.to_string(),
                         );
                     });
+
+                // Trigger on selection change
+                if previous_filter != self.last_proto_filter {
+                    *request_protocol_filter = self.last_proto_filter.clone();
+                }
+
+                ui.separator();
+
+                ui.label("Sort strategy:");
+                ui.menu_button(get_str_for_strat(local_peer.uuid.clone(), self.last_sort_strategy_peer.clone(), &self.last_sort_strategy), |ui| {
+                        if ui.button("Standard").on_hover_text("Sorted by sending times").clicked() {
+
+                            *request_sort_with_strategy = Some(SortStrategy::Standard);
+                            self.last_sort_strategy = SortStrategy::Standard;
+                            self.last_sort_strategy_peer = None;
+                            ui.close_menu();
+                        }
+                        if ui.button("Local").on_hover_text("Sorted by receiving time for the local peer and sending times for the other peers").clicked() {
+                            // locked_model.sort_messages(SortStrategy::Relative(local_peer.clone()));
+                            *request_sort_with_strategy = Some(SortStrategy::Relative(local_peer.uuid.clone()));
+                            self.last_sort_strategy = SortStrategy::Standard;
+                            self.last_sort_strategy_peer = Some(local_peer.clone());
+                            ui.close_menu();
+                        }
+                        ui.menu_button("Relative", |ui| {
+                            let mut clicked = None;
+
+                             for peer in peer_manager.peers() {
+                            if peer.uuid != local_peer.uuid {
+                                if ui.button(peer.name.as_str()).on_hover_text(format!("Sorted by receiving time for peer {} and sending times for the other peers", peer.name)).clicked() {
+                                    clicked = Some(peer.clone());
+                                }
+                             }
+                             if let Some(ref peer) = clicked {
+                                *request_sort_with_strategy = Some(SortStrategy::Relative(peer.uuid.clone()));
+                                self.last_sort_strategy = SortStrategy::Relative(peer.uuid.clone());
+                                self.last_sort_strategy_peer = Some(peer.clone());
+                                ui.close_menu();
+                             }
+                            }
+
+                        });
+                });
+
+
+
             }
         });
         ui.add_space(3.0);
