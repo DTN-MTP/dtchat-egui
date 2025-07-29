@@ -27,8 +27,9 @@ fn convert_peer_to_backend(domain_peer: &Peer) -> BackendPeer {
     }
 }
 
+
 fn main() -> Result<(), Box<dyn Error>> {
-    let event_handler = Arc::new(Mutex::new(app::EventHandler::new(10)));
+    let event_handler = Arc::new(Mutex::new(app::EventHandler::new(100)));
 
     let app_config = initialize_app_config(Some(event_handler.clone()));
     let local_peer = app_config.local_peer;
@@ -60,7 +61,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     model_arc.lock().unwrap().start(network_engine);
 
-    let options = NativeOptions::default();
+    let options = NativeOptions {
+        viewport: egui::ViewportBuilder::default().with_inner_size([850.0, 600.0]), // width, height
+        ..Default::default()
+    };
     eframe::run_native(
         "DTChat",
         options,

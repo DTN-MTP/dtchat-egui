@@ -28,7 +28,7 @@ impl ViewType {
         match self {
             ViewType::MessageGraph => "Graph",
             ViewType::MessageList => "List",
-            ViewType::Settings => "Settings",
+            ViewType::Settings => "Events",
         }
     }
 }
