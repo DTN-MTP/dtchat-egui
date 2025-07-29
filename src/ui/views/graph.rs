@@ -128,7 +128,6 @@ impl MessageGraphView {
             MessageStatus::Received => Color32::LIGHT_BLUE,
         };
 
-
         let (sent, pbat, recv) = message.get_shipment_status_timestamps();
         // Calcul de l'étendue de la boîte selon l'état du message
         let (start_time, end_time) = match &message.status {
@@ -143,16 +142,24 @@ impl MessageGraphView {
                 //     })
                 //     .unwrap_or(tx + 500.0);
                 // (send_time, receive_time)
-
-                (sent as f64, recv.unwrap() as f64)
+                let recv_opt = {
+                    if let Some(val) = recv {
+                        val as f64
+                    } else {
+                        sent as f64
+                    }
+                };
+                (sent as f64, recv_opt as f64)
             }
             MessageStatus::Received => {
-                // Message reçu d'ailleurs
-                // let rx_time = message
-                //     .receive_time
-                //     .map(|t| t.timestamp_millis() as f64)
-                //     .unwrap_or(tx);
-                (sent as f64, recv.unwrap() as f64)
+                let recv_opt = {
+                    if let Some(val) = recv {
+                        val as f64
+                    } else {
+                        sent as f64
+                    }
+                };
+                (sent as f64, recv_opt as f64)
             }
             MessageStatus::Failed => {
                 // Message échoué - boîte très courte, animation arrêtée
@@ -160,7 +167,14 @@ impl MessageGraphView {
             }
             MessageStatus::Sent | MessageStatus::Sending => {
                 // Pas d'ACK encore - animer la boîte
-                (sent as f64, pbat.unwrap() as f64)
+                let recv_opt = {
+                    if let Some(val) = pbat {
+                        val as f64
+                    } else {
+                        now
+                    }
+                };
+                (sent as f64, recv_opt)
             }
         };
 

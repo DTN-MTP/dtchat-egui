@@ -130,6 +130,7 @@ impl MessageForge {
                                     &"room".to_string(),
                                     peer.uuid.clone(),
                                     &endpoint,
+                                    self.pbat_enabled,
                                 );
                                 self.input_text.clear();
                             }
