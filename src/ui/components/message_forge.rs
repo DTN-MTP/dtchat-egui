@@ -37,6 +37,7 @@ impl MessageForge {
         local_peer_uuid: &str,
         chat_model: &Arc<Mutex<ChatModel>>,
         peer_manager: &PeerManager,
+        pbat_support_by_model: bool,
     ) {
         let available_peers: Vec<&Peer> = peers
             .iter()
@@ -144,10 +145,16 @@ impl MessageForge {
         ui.add_space(4.0);
 
         ui.horizontal(|ui| {
-            ui.checkbox(
-                &mut self.pbat_enabled,
-                "Enable Arrival Time Prediction (A-SABR)",
-            );
+            self.pbat_enabled = pbat_support_by_model && self.pbat_enabled;
+
+            ui.add_enabled(
+                pbat_support_by_model,
+                egui::Checkbox::new(
+                    &mut self.pbat_enabled,
+                    "Enable Arrival Time Prediction (A-SABR)",
+                ),
+            )
+            .on_disabled_hover_text("The CP_PATH env variable must be set before starting the app");
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if let Some(peer) = &self.selected_peer {
                     if let Some(endpoint) = peer_manager.find_endpoint_for_peer_with_protocol(

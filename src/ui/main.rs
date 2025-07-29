@@ -74,6 +74,7 @@ pub struct UIState {
     pub request_sort_strategy: bool,
     pub protocol_filter: ProtoFilter,
     pub request_protocol_filter: bool,
+    pub pbat_support_by_model: bool,
 
     // data
     pub messages: Vec<ChatMessage>,
@@ -96,11 +97,13 @@ impl UIState {
             messages_to_display: vec![],
             messages,
             peer_manager,
+            pbat_support_by_model: false,
         }
     }
 
     pub fn refresh_from_model(&mut self, chat_model: &Arc<Mutex<ChatModel>>) {
         self.messages = chat_model.lock().unwrap().get_all_messages();
+        self.pbat_support_by_model = chat_model.lock().unwrap().is_pbat_enabled();
         self.request_protocol_filter = true;
         self.request_sort_strategy = true;
     }
@@ -146,6 +149,7 @@ impl UIState {
                 &local_peer.uuid,
                 chat_model,
                 peer_manager,
+                self.pbat_support_by_model,
             );
         });
 
