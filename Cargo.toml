@@ -7,8 +7,8 @@ edition = "2021"
 egui = "0.31.0"
 eframe = "0.31.0"
 serde = { version = "1.0.217", features = ["derive"] }
-socket-engine = { git = "https://github.com/DTN-MTP/socket-engine" }
-dtchat-backend = { git = "https://github.com/DTN-MTP/dtchat-backend" }
+socket-engine = { git = "https://github.com/DTN-MTP/socket-engine" , branch = "main"}
+dtchat-backend = { git = "https://github.com/DTN-MTP/dtchat-backend" , branch = "main"}
 async-trait = "0.1"
 once_cell = "1.17"
 egui_plot = "0.31.0" # need to leave it at 0.31.0 for now

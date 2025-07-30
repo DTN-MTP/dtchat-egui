@@ -4,36 +4,22 @@ peer_list:
   - uuid: "1"
     name: Instance 1
     endpoints:
+      - "bp ipn:10.2"
       - "tcp 127.0.0.1:6500"
       - "udp 127.0.0.1:6550"
-    color: 0
-
-  - uuid: "10"
-    name: ion 10
-    endpoints:
-      - "bp ipn:10.2"
-      - "tcp 192.168.50.10:6111"
-      - "udp 192.168.50.10:7111"
-    color: 0
-
-  - uuid: "30"
-    name: ion 30
-    endpoints:
-      - "bp ipn:30.2"
-      - "tcp 192.168.50.30:6333"
-      - "udp 192.168.50.30:7333"
     color: 0
 
   - uuid: "2"
     name: Instance 2
     endpoints:
+      - "bp ipn:20.2"
       - "tcp 127.0.0.1:7500"
       - "udp 127.0.0.1:7550"
     color: 1
-
   - uuid: "3"
     name: Instance 3
     endpoints:
+      - "bp ipn:30.2"
       - "tcp 127.0.0.1:8000"
       - "udp 127.0.0.1:8050"
     color: 2
