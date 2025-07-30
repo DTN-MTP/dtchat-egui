@@ -1,5 +1,6 @@
 use crate::domain::peer::{Peer, PeerManager};
 use crate::ui::main::{ProtoFilter, ViewType};
+use crate::utils::text::PrettyStr;
 use dtchat_backend::message::SortStrategy;
 use egui::{ComboBox, Ui};
 use socket_engine::endpoint::EndpointProto;
@@ -59,40 +60,40 @@ impl MessageSettingsBar {
                     );
                     ui.selectable_value(
                         current_view,
-                        ViewType::Events,
-                        ViewType::Events.name(),
+                        ViewType::Network,
+                        ViewType::Network.name(),
                     );
                 });
 
-            if *current_view != ViewType::Events {
+            if *current_view != ViewType::Network {
                 ui.separator();
 
                 let previous_filter = protocol_filter.clone();
-                ui.label("Protocol:");
+                ui.label("Filter:");
                 ComboBox::from_id_salt("protocol_filter")
                     .selected_text(
-                        protocol_filter.to_string(),
+                        protocol_filter.to_pretty_str(),
                     )
                     .show_ui(ui, |ui| {
                         let mut opt = ProtoFilter::NoFilter;
-                        ui.selectable_value( protocol_filter, opt.clone(), opt.to_string());
+                        ui.selectable_value( protocol_filter, opt.clone(), opt.to_pretty_str());
                         opt = ProtoFilter::Filter(EndpointProto::Tcp);
                         ui.selectable_value(
                             protocol_filter,
                             opt.clone(),
-                            opt.to_string(),
+                            opt.to_pretty_str(),
                         );
                         opt = ProtoFilter::Filter(EndpointProto::Udp);
                         ui.selectable_value(
                              protocol_filter,
                             opt.clone(),
-                            opt.to_string(),
+                            opt.to_pretty_str(),
                         );
                         opt = ProtoFilter::Filter(EndpointProto::Bp);
                         ui.selectable_value(
                              protocol_filter,
                             opt.clone(),
-                            opt.to_string(),
+                            opt.to_pretty_str(),
                         );
                     });
 

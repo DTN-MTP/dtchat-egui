@@ -5,7 +5,7 @@ use serde::{
     de::{self, Visitor},
     Deserialize,
 };
-use socket_engine::endpoint::{Endpoint, EndpointProto};
+use socket_engine::endpoint::Endpoint;
 
 #[derive(Clone, Debug)]
 pub struct EndpointWrapper(pub Endpoint);
@@ -78,16 +78,6 @@ impl From<RawPeer> for Peer {
     }
 }
 
-impl Peer {
-    pub fn get_endpoint_by_protocol(&self, proto: EndpointProto) -> Option<Endpoint> {
-        self.endpoints.iter().find(|ep| ep.proto == proto).cloned()
-    }
-
-    pub fn get_available_protocols(&self) -> Vec<EndpointProto> {
-        self.endpoints.iter().map(|ep| ep.proto.clone()).collect()
-    }
-}
-
 impl Default for Peer {
     fn default() -> Self {
         Self {
@@ -107,17 +97,6 @@ pub struct PeerManager {
 impl PeerManager {
     pub fn new(local_peer: Peer, peers: Vec<Peer>) -> Self {
         Self { local_peer, peers }
-    }
-
-    pub fn find_endpoint_for_peer_with_protocol(
-        &self,
-        peer_uuid: &str,
-        protocol: EndpointProto,
-    ) -> Option<Endpoint> {
-        self.peers
-            .iter()
-            .find(|peer| peer.uuid == peer_uuid)
-            .and_then(|peer| peer.get_endpoint_by_protocol(protocol))
     }
 
     pub fn peers(&self) -> &[Peer] {

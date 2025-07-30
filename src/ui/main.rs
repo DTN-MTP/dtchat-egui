@@ -20,15 +20,15 @@ use std::sync::{Arc, Mutex};
 pub enum ViewType {
     MessageGraph,
     MessageList,
-    Events,
+    Network,
 }
 
 impl ViewType {
     pub fn name(&self) -> &'static str {
         match self {
-            ViewType::MessageGraph => "Graph",
-            ViewType::MessageList => "List",
-            ViewType::Events => "Events",
+            ViewType::MessageGraph => "📈 Graph",
+            ViewType::MessageList => "💬 List ",
+            ViewType::Network => "🖧 Network",
         }
     }
 }
@@ -150,7 +150,6 @@ impl UIState {
                 peer_manager.peers(),
                 &local_peer.uuid,
                 chat_model,
-                peer_manager,
                 self.pbat_support_by_model,
             );
         });
@@ -188,7 +187,7 @@ impl UIState {
                         &peer_manager,
                     );
                 }
-                ViewType::Events => {
+                ViewType::Network => {
                     self.views
                         .settings
                         .show(ui, &self.network_events, &self.app_events);

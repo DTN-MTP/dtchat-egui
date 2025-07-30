@@ -4,9 +4,7 @@ peer_list:
   - uuid: "1"
     name: Instance 1
     endpoints:
-      - "bp ipn:10.2"
-      - "tcp 127.0.0.1:6500"
-      - "udp 127.0.0.1:6550"
+
     color: 0
 
   - uuid: "2"

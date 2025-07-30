@@ -1,14 +1,14 @@
-use crate::domain::peer::{Peer, PeerManager};
+use crate::{domain::peer::Peer, utils::text::PrettyStr};
 use dtchat_backend::dtchat::ChatModel;
 use eframe::egui;
 use egui::ComboBox;
-use socket_engine::endpoint::EndpointProto;
+use socket_engine::endpoint::Endpoint;
 use std::sync::{Arc, Mutex};
 
 pub struct MessageForge {
     pub input_text: String,
     pub selected_peer: Option<Peer>,
-    pub selected_protocol: EndpointProto,
+    pub selected_endpoint: Option<Endpoint>,
     pub pbat_enabled: bool,
 }
 
@@ -17,16 +17,16 @@ impl MessageForge {
         Self {
             input_text: String::new(),
             selected_peer: None,
-            selected_protocol: EndpointProto::Tcp, // Default TCP
+            selected_endpoint: None, // Default TCP
             pbat_enabled: false,
         }
     }
 
-    fn get_available_protocols(&self) -> Vec<EndpointProto> {
+    pub fn select_first_endpoint(&mut self) {
         if let Some(peer) = &self.selected_peer {
-            peer.get_available_protocols()
-        } else {
-            vec![]
+            if peer.endpoints.len() > 0 {
+                self.selected_endpoint = Some(peer.endpoints[0].clone());
+            }
         }
     }
 
@@ -36,7 +36,6 @@ impl MessageForge {
         peers: &[Peer],
         local_peer_uuid: &str,
         chat_model: &Arc<Mutex<ChatModel>>,
-        peer_manager: &PeerManager,
         pbat_support_by_model: bool,
     ) {
         let available_peers: Vec<&Peer> = peers
@@ -47,58 +46,69 @@ impl MessageForge {
         if self.selected_peer.is_none() && !available_peers.is_empty() {
             self.selected_peer = Some(available_peers[0].clone());
         }
-
-        if self.selected_peer.is_some() {
-            let available_protocols = self.get_available_protocols();
-
-            if !available_protocols.contains(&self.selected_protocol)
-                && !available_protocols.is_empty()
-            {
-                self.selected_protocol = available_protocols[0].clone();
-            }
+        if self.selected_endpoint.is_none() {
+            self.select_first_endpoint();
         }
 
         ui.add_space(8.0);
         ui.horizontal(|ui| {
             ui.label("To:");
             let selected_peer = self.selected_peer.clone();
-            ComboBox::from_id_salt("peer_selector")
-                .selected_text(
-                    selected_peer
-                        .as_ref()
-                        .map(|p| p.name.clone())
-                        .unwrap_or_else(|| "Select peer".to_string()),
-                )
-                .show_ui(ui, |ui| {
-                    for peer in &available_peers {
-                        if ui
-                            .selectable_label(
-                                selected_peer.as_ref().map(|p| &p.uuid) == Some(&peer.uuid),
-                                peer.name.clone(),
-                            )
-                            .clicked()
-                        {
-                            self.selected_peer = Some((*peer).clone());
-                        }
-                    }
-                });
-            ui.label("Protocol:");
-            let available_protocols = self.get_available_protocols();
-            ComboBox::from_id_salt("protocol_selector")
-                .selected_text(self.selected_protocol.to_string())
-                .show_ui(ui, |ui| {
-                    for protocol in &available_protocols {
-                        let is_selected = self.selected_protocol == *protocol;
-                        if ui
-                            .selectable_label(is_selected, protocol.to_string())
-                            .clicked()
-                        {
-                            self.selected_protocol = protocol.clone();
-                        }
-                    }
-                });
-        });
 
+            ui.add_enabled_ui(available_peers.len() > 0, |ui| {
+                ComboBox::from_id_salt("peer_selector")
+                    .selected_text(
+                        selected_peer
+                            .as_ref()
+                            .map(|p| p.name.clone())
+                            .unwrap_or_else(|| "⚠ no peers".to_string()),
+                    )
+                    .show_ui(ui, |ui| {
+                        for peer in &available_peers {
+                            if ui
+                                .selectable_label(
+                                    selected_peer.as_ref().map(|p| &p.uuid) == Some(&peer.uuid),
+                                    peer.name.clone(),
+                                )
+                                .clicked()
+                            {
+                                self.selected_peer = Some((*peer).clone());
+                                self.select_first_endpoint();
+                            }
+                        }
+                    });
+            });
+
+            ui.label("Protocol:");
+
+            if let Some(peer) = selected_peer {
+                let selected_text = match &self.selected_endpoint {
+                    Some(endpoint) => endpoint.to_pretty_str(),
+                    None => "⚠ no endpoints".to_string(),
+                };
+                ui.add_enabled_ui(self.selected_endpoint.is_some(), |ui| {
+                    ComboBox::from_id_salt("protocol_selector")
+                        .selected_text(selected_text.clone())
+                        .show_ui(ui, |ui| {
+                            for endpoint in &peer.endpoints {
+                                let is_selected = selected_text == *endpoint.to_pretty_str();
+                                if ui
+                                    .selectable_label(is_selected, endpoint.to_pretty_str())
+                                    .clicked()
+                                {
+                                    self.selected_endpoint = Some(endpoint.clone());
+                                }
+                            }
+                        });
+                });
+            } else {
+                ui.add_enabled_ui(false, |ui| {
+                    ComboBox::from_id_salt("protocol_selector")
+                        .selected_text("⚠ no peers".to_string())
+                        .show_ui(ui, |_ui| {});
+                });
+            }
+        });
         ui.add_space(8.0);
 
         ui.horizontal(|ui| {
@@ -109,8 +119,8 @@ impl MessageForge {
 
             let response = ui.add(text_edit);
 
-            let send_button = egui::Button::new("Send")
-                .fill(egui::Color32::from_rgb(52, 144, 220))
+            let send_button = egui::Button::new("Send 📤")
+                // .fill(egui::Color32::from_rgb(42, 124, 190))
                 .corner_radius(4.0)
                 .min_size(egui::Vec2::new(60.0, 24.0));
 
@@ -121,10 +131,7 @@ impl MessageForge {
                 if let Some(peer) = &self.selected_peer {
                     let content = self.input_text.trim();
                     if !content.is_empty() {
-                        if let Some(endpoint) = peer_manager.find_endpoint_for_peer_with_protocol(
-                            &peer.uuid,
-                            self.selected_protocol.clone(),
-                        ) {
+                        if let Some(endpoint) = self.selected_endpoint.clone() {
                             if let Ok(mut model) = chat_model.lock() {
                                 model.send_to_peer(
                                     &content.to_string(),
@@ -151,28 +158,16 @@ impl MessageForge {
                 pbat_support_by_model,
                 egui::Checkbox::new(
                     &mut self.pbat_enabled,
-                    "Enable Arrival Time Prediction (A-SABR)",
+                    " 🔭 Arrival Time Prediction (A-SABR)",
                 ),
             )
             .on_disabled_hover_text("The CP_PATH env variable must be set before starting the app");
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if let Some(peer) = &self.selected_peer {
-                    if let Some(endpoint) = peer_manager.find_endpoint_for_peer_with_protocol(
-                        &peer.uuid,
-                        self.selected_protocol.clone(),
-                    ) {
-                        let address = endpoint.endpoint;
+                    if let Some(endpoint) = self.selected_endpoint.clone() {
                         ui.colored_label(
                             egui::Color32::GRAY,
-                            format!(
-                                "to {} via {} ({})",
-                                peer.name, self.selected_protocol, address
-                            ),
-                        );
-                    } else {
-                        ui.colored_label(
-                            egui::Color32::GRAY,
-                            format!("to {} via {}", peer.name, self.selected_protocol),
+                            format!("to {} via {}", peer.name, endpoint.to_pretty_str()),
                         );
                     }
                 }
