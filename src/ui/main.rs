@@ -1,4 +1,4 @@
-use crate::app::EventHandler;
+use crate::app::DisplayEvent;
 use crate::domain::peer::PeerManager;
 use crate::ui::components::header::Header;
 use crate::ui::components::message_forge::MessageForge;
@@ -20,7 +20,7 @@ use std::sync::{Arc, Mutex};
 pub enum ViewType {
     MessageGraph,
     MessageList,
-    Settings,
+    Events,
 }
 
 impl ViewType {
@@ -28,7 +28,7 @@ impl ViewType {
         match self {
             ViewType::MessageGraph => "Graph",
             ViewType::MessageList => "List",
-            ViewType::Settings => "Events",
+            ViewType::Events => "Events",
         }
     }
 }
@@ -77,13 +77,15 @@ pub struct UIState {
     pub pbat_support_by_model: bool,
 
     // data
-    pub messages: Vec<ChatMessage>,
-    pub messages_to_display: Vec<ChatMessage>,
+    messages_to_display: Vec<ChatMessage>,
+    messages: Vec<ChatMessage>,
+    app_events: VecDeque<DisplayEvent>,
+    network_events: VecDeque<DisplayEvent>,
     peer_manager: PeerManager,
 }
 
 impl UIState {
-    pub fn new(peer_manager: PeerManager, messages: Vec<ChatMessage>) -> Self {
+    pub fn new(peer_manager: PeerManager) -> Self {
         Self {
             message_forge: MessageForge::new(),
             message_settings_bar: MessageSettingsBar::new(),
@@ -95,35 +97,35 @@ impl UIState {
             request_protocol_filter: true,
             protocol_filter: ProtoFilter::NoFilter,
             messages_to_display: vec![],
-            messages,
+            messages: vec![],
+            app_events: VecDeque::new(),
+            network_events: VecDeque::new(),
             peer_manager,
             pbat_support_by_model: false,
         }
     }
 
-    pub fn will_lock_model_to_refresh(&mut self, chat_model: &Arc<Mutex<ChatModel>>) {
+    pub fn will_lock_model_to_refresh(
+        &mut self,
+        chat_model: &Arc<Mutex<ChatModel>>,
+        app_events: VecDeque<DisplayEvent>,
+        network_events: VecDeque<DisplayEvent>,
+    ) {
         self.messages = chat_model.lock().unwrap().get_all_messages();
         self.pbat_support_by_model = chat_model.lock().unwrap().is_pbat_enabled();
         self.request_protocol_filter = true;
         self.request_sort_strategy = true;
+        self.app_events = app_events;
+        self.network_events = network_events;
     }
 
     pub fn show(
         &mut self,
         ui: &mut Ui,
-        events: &Arc<Mutex<EventHandler>>,
         chat_model: &Arc<Mutex<ChatModel>>,
     ) -> Option<(String, String)> {
         let peer_manager = &self.peer_manager;
         let local_peer = self.peer_manager.local_peer();
-        let (network_events, app_events) = if let Ok(handler) = events.lock() {
-            (
-                handler.network_events().clone(),
-                handler.app_events().clone(),
-            )
-        } else {
-            (VecDeque::new(), VecDeque::new())
-        };
 
         TopBottomPanel::top("header").show_inside(ui, |ui| {
             self.header.show(ui, local_peer);
@@ -186,8 +188,10 @@ impl UIState {
                         &peer_manager,
                     );
                 }
-                ViewType::Settings => {
-                    self.views.settings.show(ui, &network_events, &app_events);
+                ViewType::Events => {
+                    self.views
+                        .settings
+                        .show(ui, &self.network_events, &self.app_events);
                 }
             }
         });

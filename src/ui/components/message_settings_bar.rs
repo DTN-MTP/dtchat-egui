@@ -59,12 +59,12 @@ impl MessageSettingsBar {
                     );
                     ui.selectable_value(
                         current_view,
-                        ViewType::Settings,
-                        ViewType::Settings.name(),
+                        ViewType::Events,
+                        ViewType::Events.name(),
                     );
                 });
 
-            if *current_view != ViewType::Settings {
+            if *current_view != ViewType::Events {
                 ui.separator();
 
                 let previous_filter = protocol_filter.clone();

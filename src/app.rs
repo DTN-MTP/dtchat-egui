@@ -78,11 +78,11 @@ impl EventHandler {
             self.app_events.pop_front();
         }
     }
-    pub fn network_events(&self) -> &VecDeque<DisplayEvent> {
-        &self.network_events
+    pub fn network_events(&self) -> VecDeque<DisplayEvent> {
+        self.network_events.clone()
     }
-    pub fn app_events(&self) -> &VecDeque<DisplayEvent> {
-        &self.app_events
+    pub fn app_events(&self) -> VecDeque<DisplayEvent> {
+        self.app_events.clone()
     }
 
     pub fn handle_chat_app_event(&mut self, app_event: ChatAppEvent) {
@@ -256,10 +256,7 @@ impl DTChatApp {
         Self {
             event_handler,
             chat_model,
-            ui: UIState::new(
-                PeerManager::new(local_peer.clone(), dist_peers.clone()),
-                vec![],
-            ),
+            ui: UIState::new(PeerManager::new(local_peer.clone(), dist_peers.clone())),
             context_initialized: false,
         }
     }
@@ -275,20 +272,24 @@ impl App for DTChatApp {
             self.context_initialized = true;
         }
 
-        let mut requested = false;
+        let mut update_request_with_events: Option<(
+            VecDeque<DisplayEvent>,
+            VecDeque<DisplayEvent>,
+        )> = None;
         // Update the mirror of the model if something changed
         if let Ok(mut handler) = self.event_handler.lock() {
             if handler.refresh_model_request {
-                requested = true;
                 handler.refresh_model_request = false;
+                update_request_with_events = Some((handler.app_events(), handler.network_events()));
             }
         }
-        if requested {
-            self.ui.will_lock_model_to_refresh(&self.chat_model);
+        if let Some((app_events, net_events)) = update_request_with_events {
+            self.ui
+                .will_lock_model_to_refresh(&self.chat_model, app_events, net_events);
         }
 
         CentralPanel::default().show(ctx, |ui| {
-            self.ui.show(ui, &self.event_handler, &self.chat_model);
+            self.ui.show(ui, &self.chat_model);
         });
 
         ctx.request_repaint();
