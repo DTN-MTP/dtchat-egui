@@ -376,8 +376,6 @@ impl MessageGraphView {
                     }
                 }
             });
-
-        ui.ctx().request_repaint();
     }
 }
 

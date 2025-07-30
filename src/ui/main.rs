@@ -101,7 +101,7 @@ impl UIState {
         }
     }
 
-    pub fn refresh_from_model(&mut self, chat_model: &Arc<Mutex<ChatModel>>) {
+    pub fn will_lock_model_to_refresh(&mut self, chat_model: &Arc<Mutex<ChatModel>>) {
         self.messages = chat_model.lock().unwrap().get_all_messages();
         self.pbat_support_by_model = chat_model.lock().unwrap().is_pbat_enabled();
         self.request_protocol_filter = true;

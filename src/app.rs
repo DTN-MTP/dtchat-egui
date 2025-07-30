@@ -228,9 +228,6 @@ impl EventHandler {
             }
         }
 
-        if let Some(ctx) = &self.ctx {
-            ctx.request_repaint();
-        }
         self.refresh_model_request = true;
     }
 }
@@ -278,16 +275,22 @@ impl App for DTChatApp {
             self.context_initialized = true;
         }
 
+        let mut requested = false;
         // Update the mirror of the model if something changed
         if let Ok(mut handler) = self.event_handler.lock() {
             if handler.refresh_model_request {
+                requested = true;
                 handler.refresh_model_request = false;
-                self.ui.refresh_from_model(&self.chat_model);
             }
+        }
+        if requested {
+            self.ui.will_lock_model_to_refresh(&self.chat_model);
         }
 
         CentralPanel::default().show(ctx, |ui| {
             self.ui.show(ui, &self.event_handler, &self.chat_model);
         });
+
+        ctx.request_repaint();
     }
 }
