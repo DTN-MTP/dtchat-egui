@@ -4,8 +4,9 @@ use std::sync::{Arc, Mutex};
 use chrono::{DateTime, Utc};
 use dtchat_backend::dtchat::ChatModel;
 use dtchat_backend::event::{
-    AppEventObserver, ChatAppErrorEvent, ChatAppEvent, ChatAppInfoEvent, NetworkErrorEvent,
-    NetworkEvent,
+    AppEventObserver, ChatAppErrorEvent, ChatAppEvent, ChatAppInfoEvent,
+    ErrorEvent::{ConnectionFailed, ReceiveFailed, SendFailed, SocketError},
+    NetworkErrorEvent, NetworkEvent,
 };
 use dtchat_backend::event::{ConnectionEvent, DataEvent};
 use eframe::{egui, App};
@@ -13,7 +14,7 @@ use egui::CentralPanel;
 
 use crate::domain::peer::{Peer, PeerManager};
 use crate::ui::main::UIState;
-use crate::utils::uuid::safe_message_id_display;
+use crate::utils::uuid::safe_id_display;
 
 #[derive(Clone, Debug)]
 pub enum EventLevel {
@@ -39,12 +40,10 @@ impl DisplayEvent {
     }
 }
 
-#[derive(Default)]
 pub struct EventHandler {
     pub network_events: VecDeque<DisplayEvent>,
     pub app_events: VecDeque<DisplayEvent>,
     pub max_events_per_category: usize,
-    pub ctx: Option<egui::Context>,
     pub refresh_model_request: bool,
 }
 
@@ -54,14 +53,10 @@ impl EventHandler {
             network_events: VecDeque::new(),
             app_events: VecDeque::new(),
             max_events_per_category,
-            ctx: None,
             refresh_model_request: true,
         }
     }
 
-    pub fn set_context(&mut self, ctx: egui::Context) {
-        self.ctx = Some(ctx);
-    }
     pub fn add_network_event(&mut self, level: EventLevel, message: String) {
         let event = DisplayEvent::new(level, message);
         self.network_events.push_back(event);
@@ -91,27 +86,41 @@ impl EventHandler {
                 ChatAppInfoEvent::Sending(msg) => {
                     self.add_app_event(
                         EventLevel::Info,
-                        format!("Sending: {}", safe_message_id_display(&msg.uuid)),
+                        format!(
+                            "Sending msg {} to room {}",
+                            safe_id_display(&msg.uuid),
+                            safe_id_display(&msg.room_uuid)
+                        ),
                     );
                 }
                 ChatAppInfoEvent::Sent(msg) => {
                     self.add_app_event(
                         EventLevel::Info,
-                        format!("Sent: {}", safe_message_id_display(&msg.uuid)),
+                        format!(
+                            "Sent msg {} to room {}",
+                            safe_id_display(&msg.uuid),
+                            safe_id_display(&msg.room_uuid)
+                        ),
                     );
                 }
                 ChatAppInfoEvent::Received(msg) => {
                     self.add_app_event(
                         EventLevel::Info,
-                        format!("Received: {}", safe_message_id_display(&msg.uuid)),
+                        format!(
+                            "Received: msg {} from {} for room {}",
+                            safe_id_display(&msg.uuid),
+                            safe_id_display(&msg.sender_uuid),
+                            safe_id_display(&msg.room_uuid)
+                        ),
                     );
                 }
                 ChatAppInfoEvent::AckSent(msg, peer_id) => {
                     self.add_app_event(
                         EventLevel::Info,
                         format!(
-                            "ACK sent for {} to {}",
-                            safe_message_id_display(&msg.uuid),
+                            "ACK sent for msg {} from room {} to {}",
+                            safe_id_display(&msg.uuid),
+                            safe_id_display(&msg.room_uuid),
                             peer_id
                         ),
                     );
@@ -119,7 +128,7 @@ impl EventHandler {
                 ChatAppInfoEvent::AckReceived(msg) => {
                     self.add_app_event(
                         EventLevel::Info,
-                        format!("ACK received for {}", safe_message_id_display(&msg.uuid)),
+                        format!("ACK received for msg {}", safe_id_display(&msg.uuid)),
                     );
                 }
             },
@@ -136,7 +145,7 @@ impl EventHandler {
                 ChatAppErrorEvent::MessageNotFound(msg_id) => {
                     self.add_app_event(
                         EventLevel::Error,
-                        format!("Message not found: {}", safe_message_id_display(&msg_id)),
+                        format!("Message not found: {}", safe_id_display(&msg_id)),
                     );
                 }
                 ChatAppErrorEvent::PeerNotFound(peer_id) => {
@@ -147,13 +156,6 @@ impl EventHandler {
                 }
                 ChatAppErrorEvent::InternalError(error) => {
                     self.add_app_event(EventLevel::Error, format!("Internal: {}", error));
-                }
-                ChatAppErrorEvent::HostNotReachable(error) => {
-                    self.add_network_event(
-                        EventLevel::Error,
-                        format!("Connection failed: {}", error),
-                    );
-                    self.add_app_event(EventLevel::Error, format!("Host not reachable: {}", error));
                 }
             },
             ChatAppEvent::SocketEngineInfo(network_event) => {
@@ -173,20 +175,16 @@ impl EventHandler {
                                 "Sent {} bytes to {} (token: {})",
                                 bytes_sent,
                                 to.to_string(),
-                                safe_message_id_display(&token)
+                                safe_id_display(&token)
                             ),
                         ),
-                        DataEvent::Sending {
-                            token,
-                            to,
-                            bytes,
-                        } => (
+                        DataEvent::Sending { token, to, bytes } => (
                             EventLevel::Info,
                             format!(
                                 "Sending {} bytes to {} (token: {})",
                                 bytes,
                                 to.to_string(),
-                                safe_message_id_display(&token)
+                                safe_id_display(&token)
                             ),
                         ),
                     },
@@ -219,12 +217,52 @@ impl EventHandler {
                 self.add_network_event(level, event_text);
             }
             ChatAppEvent::SocketEngineError(network_error) => {
-                let error_text = match network_error {
-                    NetworkErrorEvent::SocketError(socket_error) => {
-                        format!("Socket error: {:?}", socket_error)
-                    }
+                match network_error {
+                    NetworkErrorEvent::SocketError(socket_error) => match socket_error {
+                        ConnectionFailed {
+                            endpoint,
+                            reason,
+                            token,
+                        } => {
+                            self.add_network_event(
+                                EventLevel::Error,
+                                format!(
+                                    "Connection failed: {:?} (endpoint: {}, token {})",
+                                    reason,
+                                    endpoint,
+                                    safe_id_display(&token)
+                                ),
+                            );
+                        }
+                        SendFailed {
+                            endpoint,
+                            token,
+                            reason,
+                        } => {
+                            self.add_network_event(
+                                EventLevel::Error,
+                                format!(
+                                    "Send failed: {:?} (endpoint: {}, token {})",
+                                    reason,
+                                    endpoint,
+                                    safe_id_display(&token)
+                                ),
+                            );
+                        }
+                        ReceiveFailed { endpoint, reason } => {
+                            self.add_network_event(
+                                EventLevel::Error,
+                                format!("Receive failed: {:?} (endpoint: {})", reason, endpoint),
+                            );
+                        }
+                        SocketError { endpoint, reason } => {
+                            self.add_network_event(
+                                EventLevel::Error,
+                                format!("Socket error: {:?} (endpoint: {})", reason, endpoint),
+                            );
+                        }
+                    },
                 };
-                self.add_network_event(EventLevel::Error, error_text);
             }
         }
 
@@ -266,7 +304,6 @@ impl App for DTChatApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if !self.context_initialized {
             if let Ok(mut handler) = self.event_handler.lock() {
-                handler.set_context(ctx.clone());
                 handler.add_app_event(EventLevel::Info, "DTChat GUI initialized".to_string());
             }
             self.context_initialized = true;

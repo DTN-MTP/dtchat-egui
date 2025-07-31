@@ -1,4 +1,4 @@
-pub fn safe_message_id_display(id: &str) -> &str {
+pub fn safe_id_display(id: &str) -> &str {
     if id.len() >= 8 {
         &id[..8]
     } else {

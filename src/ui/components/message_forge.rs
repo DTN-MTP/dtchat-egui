@@ -135,7 +135,7 @@ impl MessageForge {
                             if let Ok(mut model) = chat_model.lock() {
                                 model.send_to_peer(
                                     &content.to_string(),
-                                    &"room".to_string(),
+                                    &"Default".to_string(), // TODO
                                     peer.uuid.clone(),
                                     &endpoint,
                                     self.pbat_enabled,
