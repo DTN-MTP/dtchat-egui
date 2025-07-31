@@ -164,7 +164,7 @@ a outduct tcp 192.168.50.30:4556 tcpclo
 5. **Press Enter or click Send**
 6. **View delivery predictions** in real-time (if PBAT enabled)
 
-![DTChat Main Interface ](docs/img/pbat.png)
+![DTChat Main Interface ](docs/img/UI.png)
 *DTChat Main Interface Showing Type Of Messages (Sent, Sent with PBAT enabled and Received Messages)*
 
 ### Message Status Indicators
