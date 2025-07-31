@@ -44,7 +44,7 @@ impl MessageSettingsBar {
     ) {
         ui.add_space(3.0);
         ui.horizontal(|ui| {
-            ui.label("Views:");
+            ui.label("View:");
             ComboBox::from_id_salt("view_selector")
                 .selected_text(current_view.name())
                 .show_ui(ui, |ui| {
