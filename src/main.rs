@@ -12,9 +12,9 @@ use app::DTChatApp;
 use config::initialize_app_config;
 use dtchat_backend::db::simple_vec::SimpleVecDB;
 use dtchat_backend::dtchat::{ChatModel, Peer as BackendPeer};
+use dtchat_backend::Endpoint;
+use dtchat_backend::Engine;
 use eframe::{App, NativeOptions};
-use socket_engine::endpoint::Endpoint;
-use socket_engine::engine::Engine;
 
 use crate::domain::peer::Peer;
 

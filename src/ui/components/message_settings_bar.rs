@@ -2,8 +2,8 @@ use crate::domain::peer::{Peer, PeerManager};
 use crate::ui::main::{ProtoFilter, ViewType};
 use crate::utils::text::PrettyStr;
 use dtchat_backend::message::SortStrategy;
+use dtchat_backend::EndpointProto;
 use egui::{ComboBox, Ui};
-use socket_engine::endpoint::EndpointProto;
 
 pub struct MessageSettingsBar {
     last_sort_strategy_peer: Option<Peer>,

@@ -10,9 +10,9 @@ use dtchat_backend::dtchat::ChatModel;
 use dtchat_backend::message::{
     filter_by_network_endpoint, sort_with_strategy, ChatMessage, SortStrategy,
 };
+use dtchat_backend::EndpointProto;
 use eframe::egui;
 use egui::{CentralPanel, TopBottomPanel, Ui};
-use socket_engine::endpoint::EndpointProto;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 

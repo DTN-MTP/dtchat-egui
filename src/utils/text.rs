@@ -1,4 +1,4 @@
-use socket_engine::endpoint::{Endpoint, EndpointProto};
+use dtchat_backend::{Endpoint, EndpointProto};
 
 use crate::ui::main::ProtoFilter;
 

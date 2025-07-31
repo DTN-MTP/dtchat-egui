@@ -1,11 +1,11 @@
 use std::fmt;
 
+use dtchat_backend::Endpoint;
 use serde::Deserializer;
 use serde::{
     de::{self, Visitor},
     Deserialize,
 };
-use socket_engine::endpoint::Endpoint;
 
 #[derive(Clone, Debug)]
 pub struct EndpointWrapper(pub Endpoint);

@@ -7,9 +7,9 @@ use dtchat_backend::event::{
     AppEventObserver, ChatAppErrorEvent, ChatAppEvent, ChatAppInfoEvent, NetworkErrorEvent,
     NetworkEvent,
 };
+use dtchat_backend::event::{ConnectionEvent, DataEvent};
 use eframe::{egui, App};
 use egui::CentralPanel;
-use socket_engine::event::{ConnectionEvent, DataEvent};
 
 use crate::domain::peer::{Peer, PeerManager};
 use crate::ui::main::UIState;

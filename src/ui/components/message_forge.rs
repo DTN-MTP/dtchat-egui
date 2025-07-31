@@ -1,8 +1,8 @@
 use crate::{domain::peer::Peer, utils::text::PrettyStr};
 use dtchat_backend::dtchat::ChatModel;
+use dtchat_backend::Endpoint;
 use eframe::egui;
 use egui::ComboBox;
-use socket_engine::endpoint::Endpoint;
 use std::sync::{Arc, Mutex};
 
 pub struct MessageForge {
