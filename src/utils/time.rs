@@ -20,8 +20,8 @@ pub fn ts_to_str(
 }
 
 pub fn clock(hours: u32, mins: u32) -> char {
-    let mut idx: u32 = hours;
-    if mins > 45 {
+    let mut idx: u32 = hours % 12;
+    if mins >= 45 {
         idx += 1;
     }
 
@@ -29,7 +29,7 @@ pub fn clock(hours: u32, mins: u32) -> char {
         idx = 12;
     }
 
-    if mins > 15 && mins < 45 {
+    if mins >= 15 && mins < 45 {
         idx += 12;
     };
     char::from_u32(0x1F54F + idx).unwrap()
