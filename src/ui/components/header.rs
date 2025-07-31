@@ -25,7 +25,7 @@ impl Header {
             ui.vertical(|ui| {
                 ui.label(eframe::egui::RichText::new("📡 DTChat").size(20.0).strong());
 
-                ui.label(eframe::egui::RichText::new("Delay Tolerant Messaging").size(10.5));
+                ui.label(eframe::egui::RichText::new("Delay-Tolerant Messaging").size(10.5));
                 ui.add_space(10.0);
 
                 let mins = chrono::Timelike::minute(&current_time);
