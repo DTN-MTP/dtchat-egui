@@ -1,5 +1,4 @@
 use chrono::{DateTime, Utc};
-use egui::Color32;
 
 use crate::{
     domain::peer::Peer,
@@ -44,7 +43,7 @@ impl Header {
                         )
                     ))
                     .size(12.0)
-                    .color(Color32::RED),
+                    .strong(),
                 );
             });
 

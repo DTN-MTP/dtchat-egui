@@ -3,7 +3,6 @@ use dtchat_backend::message::ChatMessage;
 use eframe::egui;
 
 pub struct MessageListView {
-    pub max_messages_displayed: usize,
     pub show_timestamps: bool,
     pub compact_mode: bool,
 }
@@ -11,7 +10,6 @@ pub struct MessageListView {
 impl MessageListView {
     pub fn new() -> Self {
         Self {
-            max_messages_displayed: 8, // Comme dans dtchat_tui
             show_timestamps: true,
             compact_mode: false,
         }
@@ -26,21 +24,12 @@ impl MessageListView {
     ) {
         egui::ScrollArea::vertical()
             .auto_shrink([false; 2])
+            .stick_to_bottom(true)
             .show(ui, |ui| {
                 if messages.is_empty() {
                     ui.colored_label(egui::Color32::GRAY, "Empty chat");
                 } else {
-                    // Afficher les derniers messages dans l'ordre chronologique
-                    let messages_to_show: Vec<_> = messages
-                        .iter()
-                        .rev()
-                        .take(self.max_messages_displayed)
-                        .collect::<Vec<_>>()
-                        .into_iter()
-                        .rev()
-                        .collect();
-
-                    for message in messages_to_show {
+                    for message in messages.iter().rev() {
                         self.render(ui, message, &local_peer.uuid, peer_manager);
                         ui.add_space(4.0);
                     }
