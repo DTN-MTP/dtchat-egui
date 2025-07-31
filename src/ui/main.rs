@@ -6,6 +6,7 @@ use crate::ui::components::message_settings_bar::MessageSettingsBar;
 use crate::ui::views::graph::MessageGraphView;
 use crate::ui::views::list::MessageListView;
 use crate::ui::views::settings::SettingsView;
+use chrono::Utc;
 use dtchat_backend::dtchat::ChatModel;
 use dtchat_backend::message::{
     filter_by_network_endpoint, sort_with_strategy, ChatMessage, SortStrategy,
@@ -126,9 +127,9 @@ impl UIState {
     ) -> Option<(String, String)> {
         let peer_manager = &self.peer_manager;
         let local_peer = self.peer_manager.local_peer();
-
+        let current_time = Utc::now();
         TopBottomPanel::top("header").show_inside(ui, |ui| {
-            self.header.show(ui, local_peer);
+            self.header.show(ui, local_peer, current_time);
         });
 
         TopBottomPanel::top("message_settings_bar").show_inside(ui, |ui| {
@@ -177,6 +178,7 @@ impl UIState {
                         &self.messages_to_display,
                         &local_peer.uuid,
                         &peer_manager,
+                        current_time,
                     );
                 }
                 ViewType::MessageList => {

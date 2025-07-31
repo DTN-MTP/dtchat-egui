@@ -1,5 +1,6 @@
 use crate::domain::peer::{Peer, PeerManager};
-use chrono::{DateTime, Local, Utc};
+use crate::utils::time::ts_to_str;
+use chrono::{DateTime, Utc};
 use dtchat_backend::message::{ChatMessage, MessageStatus};
 use egui::Color32;
 use egui_plot::{AxisHints, BoxElem, BoxPlot, BoxSpread, GridMark, Legend, Plot, VLine};
@@ -24,25 +25,6 @@ impl AutoReset for Plot<'_> {
         }
         self
     }
-}
-
-pub fn ts_to_str(
-    datetime: &DateTime<Utc>,
-    date: bool,
-    time: bool,
-    separator: Option<String>,
-) -> String {
-    let mut res = "".to_string();
-    if date {
-        res += &datetime.format("%Y-%m-%d").to_string();
-    }
-    if let Some(sep) = separator {
-        res += &sep;
-    }
-    if time {
-        res += &datetime.format("%H:%M:%S").to_string()
-    }
-    res
 }
 
 impl MessageGraphView {
@@ -208,6 +190,7 @@ impl MessageGraphView {
         messages: &Vec<ChatMessage>,
         local_peer_uuid: &str,
         peer_manager: &PeerManager,
+        current_time: DateTime<Utc>,
     ) {
         let make_time_formatter = |show_date: bool, show_time: bool, sep: Option<String>| {
             move |x: GridMark, _range: &RangeInclusive<f64>| {
@@ -226,7 +209,7 @@ impl MessageGraphView {
                 .placement(egui_plot::VPlacement::Bottom),
         ];
 
-        let now = Local::now().timestamp_millis() as f64;
+        let now = current_time.timestamp_millis() as f64;
         let peers = peer_manager.peers();
 
         self.update_participants(messages, peers, local_peer_uuid);

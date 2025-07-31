@@ -2,7 +2,7 @@ use crate::{domain::peer::Peer, utils::text::PrettyStr};
 use dtchat_backend::dtchat::ChatModel;
 use dtchat_backend::Endpoint;
 use eframe::egui;
-use egui::ComboBox;
+use egui::{ComboBox, RichText};
 use std::sync::{Arc, Mutex};
 
 pub struct MessageForge {
@@ -119,7 +119,7 @@ impl MessageForge {
 
             let response = ui.add(text_edit);
 
-            let send_button = egui::Button::new("Send 📤")
+            let send_button = egui::Button::new(RichText::new("Send 📤").strong())
                 // .fill(egui::Color32::from_rgb(42, 124, 190))
                 .corner_radius(4.0)
                 .min_size(egui::Vec2::new(60.0, 24.0));
