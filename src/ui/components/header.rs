@@ -1,11 +1,8 @@
-use chrono::{DateTime, Utc};
+use dtchat_backend::time::DTChatTime;
 
 use crate::{
     domain::peer::Peer,
-    utils::{
-        text::PrettyStr,
-        time::{clock, ts_to_str},
-    },
+    utils::{text::PrettyStr, time::clock},
 };
 
 pub struct Header {}
@@ -15,12 +12,7 @@ impl Header {
         Self {}
     }
 
-    pub fn show(
-        &mut self,
-        ui: &mut eframe::egui::Ui,
-        local_peer: &Peer,
-        current_time: DateTime<Utc>,
-    ) {
+    pub fn show(&mut self, ui: &mut eframe::egui::Ui, local_peer: &Peer, current_time: DTChatTime) {
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ui.label(eframe::egui::RichText::new("📡 DTChat").size(20.0).strong());
@@ -28,15 +20,13 @@ impl Header {
                 ui.label(eframe::egui::RichText::new("Delay-Tolerant Messaging").size(10.5));
                 ui.add_space(10.0);
 
-                let mins = chrono::Timelike::minute(&current_time);
-                let hours = chrono::Timelike::hour(&current_time);
+                let (mins, hours) = current_time.mins_hours();
                 let clock = clock(hours, mins);
 
                 ui.label(
                     eframe::egui::RichText::new(format!(
                         "\u{1F4C5} {} ",
-                        ts_to_str(
-                            &current_time,
+                        &current_time.ts_to_str(
                             true,
                             true,
                             Some(format!(" {} ", clock).to_string())

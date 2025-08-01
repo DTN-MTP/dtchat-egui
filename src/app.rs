@@ -1,7 +1,3 @@
-use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
-
-use chrono::{DateTime, Utc};
 use dtchat_backend::dtchat::ChatModel;
 use dtchat_backend::event::{
     AppEventObserver, ChatAppErrorEvent, ChatAppEvent, ChatAppInfoEvent,
@@ -9,11 +5,15 @@ use dtchat_backend::event::{
     NetworkErrorEvent, NetworkEvent,
 };
 use dtchat_backend::event::{ConnectionEvent, DataEvent};
+use dtchat_backend::time::DTChatTime;
 use eframe::{egui, App};
-use egui::CentralPanel;
+use egui::{CentralPanel, Color32};
+use std::collections::VecDeque;
+use std::sync::{Arc, Mutex};
 
 use crate::domain::peer::{Peer, PeerManager};
 use crate::ui::main::UIState;
+use crate::utils::text::PrettyStr;
 use crate::utils::uuid::safe_id_display;
 
 #[derive(Clone, Debug)]
@@ -25,9 +25,9 @@ pub enum EventLevel {
 
 #[derive(Clone, Debug)]
 pub struct DisplayEvent {
-    pub level: EventLevel,
-    pub message: String,
-    pub timestamp: DateTime<Utc>,
+    level: EventLevel,
+    message: String,
+    timestamp: DTChatTime,
 }
 
 impl DisplayEvent {
@@ -35,8 +35,25 @@ impl DisplayEvent {
         Self {
             level,
             message,
-            timestamp: Utc::now(),
+            timestamp: DTChatTime::now(),
         }
+    }
+    pub fn get_color(&self) -> Color32 {
+        match self.level {
+            EventLevel::Error => Color32::RED,
+            EventLevel::Info => Color32::LIGHT_BLUE,
+            EventLevel::Debug => Color32::GRAY,
+        }
+    }
+}
+
+impl PrettyStr for DisplayEvent {
+    fn to_pretty_str(&self) -> String {
+        format!(
+            "[{}] {}",
+            self.timestamp.ts_to_str(false, true, None),
+            self.message
+        )
     }
 }
 

@@ -1,24 +1,3 @@
-use chrono::{DateTime, Utc};
-
-pub fn ts_to_str(
-    datetime: &DateTime<Utc>,
-    date: bool,
-    time: bool,
-    separator: Option<String>,
-) -> String {
-    let mut res = "".to_string();
-    if date {
-        res += &datetime.format("%Y-%m-%d").to_string();
-    }
-    if let Some(sep) = separator {
-        res += &sep;
-    }
-    if time {
-        res += &datetime.format("%H:%M:%S").to_string()
-    }
-    res
-}
-
 pub fn clock(hours: u32, mins: u32) -> char {
     let mut idx: u32 = hours % 12;
     if mins >= 45 {

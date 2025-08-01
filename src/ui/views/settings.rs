@@ -1,5 +1,5 @@
-use crate::app::{DisplayEvent, EventLevel};
-use eframe::egui::{self, Color32, ScrollArea};
+use crate::{app::DisplayEvent, utils::text::PrettyStr};
+use eframe::egui::{self, ScrollArea};
 use std::collections::VecDeque;
 
 pub struct SettingsView;
@@ -22,19 +22,7 @@ fn show_events_in_columns(ui: &mut egui::Ui, heading: &str, app_events: &VecDequ
                             // Show newest events first
                             for (index, event) in app_events.iter().enumerate() {
                                 ui.push_id(format!("{}_{}", heading, index), |ui| {
-                                    let color = match event.level {
-                                        EventLevel::Error => Color32::RED,
-                                        EventLevel::Info => Color32::LIGHT_BLUE,
-                                        EventLevel::Debug => Color32::GRAY,
-                                    };
-                                    ui.colored_label(
-                                        color,
-                                        format!(
-                                            "[{}] {}",
-                                            event.timestamp.format("%H:%M:%S"),
-                                            event.message
-                                        ),
-                                    );
+                                    ui.colored_label(event.get_color(), event.to_pretty_str());
                                 });
                             }
                         }

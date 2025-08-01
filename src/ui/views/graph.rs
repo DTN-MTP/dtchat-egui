@@ -1,7 +1,6 @@
 use crate::domain::peer::{Peer, PeerManager};
-use crate::utils::time::ts_to_str;
-use chrono::{DateTime, Utc};
 use dtchat_backend::message::{ChatMessage, MessageStatus};
+use dtchat_backend::time::DTChatTime;
 use egui::Color32;
 use egui_plot::{AxisHints, BoxElem, BoxPlot, BoxSpread, GridMark, Legend, Plot, VLine};
 use std::collections::{HashMap, HashSet};
@@ -190,13 +189,13 @@ impl MessageGraphView {
         messages: &Vec<ChatMessage>,
         local_peer_uuid: &str,
         peer_manager: &PeerManager,
-        current_time: DateTime<Utc>,
+        current_time: DTChatTime,
     ) {
         let make_time_formatter = |show_date: bool, show_time: bool, sep: Option<String>| {
             move |x: GridMark, _range: &RangeInclusive<f64>| {
-                let datetime = DateTime::<Utc>::from_timestamp_millis(x.value as i64).unwrap();
+                let datetime = DTChatTime::from_timestamp_millis(x.value as i64).unwrap();
                 let sep_cloned = sep.clone();
-                ts_to_str(&datetime, show_date, show_time, sep_cloned)
+                datetime.ts_to_str(show_date, show_time, sep_cloned)
             }
         };
 
@@ -273,8 +272,8 @@ impl MessageGraphView {
                 if !name.is_empty() {
                     format!("{}: {:.*}%", name, 1, value.y)
                 } else {
-                    let value = DateTime::<Utc>::from_timestamp_millis(value.x as i64).unwrap();
-                    ts_to_str(&value, false, true, None).to_string()
+                    let value = DTChatTime::from_timestamp_millis(value.x as i64).unwrap();
+                    value.ts_to_str(false, true, None)
                 }
             })
             .height(plot_height)
@@ -327,11 +326,11 @@ impl MessageGraphView {
                                 .horizontal()
                                 .allow_hover(true)
                                 .element_formatter(Box::new(move |bar, _bar_chart| {
-                                    let tx_time = DateTime::<Utc>::from_timestamp_millis(
+                                    let tx_time = DTChatTime::from_timestamp_millis(
                                         bar.spread.quartile1 as i64,
                                     )
                                     .unwrap();
-                                    let rx_time = DateTime::<Utc>::from_timestamp_millis(
+                                    let rx_time = DTChatTime::from_timestamp_millis(
                                         bar.spread.quartile3 as i64,
                                     )
                                     .unwrap();
@@ -348,8 +347,8 @@ impl MessageGraphView {
                                         "Message: {}\nSent by {}\ntx time: {}\nrx_time: {}{}",
                                         bar.name,
                                         formatter_name_for_closure,
-                                        ts_to_str(&tx_time, date, true, None),
-                                        ts_to_str(&rx_time, date, true, None),
+                                        tx_time.ts_to_str(date, true, None),
+                                        rx_time.ts_to_str(date, true, None),
                                         status_info
                                     )
                                 }));
