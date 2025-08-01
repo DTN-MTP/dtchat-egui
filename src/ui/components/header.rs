@@ -5,11 +5,17 @@ use crate::{
     utils::{text::PrettyStr, time::clock},
 };
 
-pub struct Header {}
+pub struct Header {
+    minutes: u32,
+    clock: String,
+}
 
 impl Header {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            minutes: 100,
+            clock: String::new(),
+        }
     }
 
     pub fn show(&mut self, ui: &mut eframe::egui::Ui, local_peer: &Peer, current_time: DTChatTime) {
@@ -20,17 +26,16 @@ impl Header {
                 ui.label(eframe::egui::RichText::new("Delay-Tolerant Messaging").size(10.5));
                 ui.add_space(10.0);
 
-                let (mins, hours) = current_time.mins_hours();
-                let clock = clock(hours, mins);
+                let (mins, hours) = current_time.mins_hours(&chrono::Local);
+                if self.minutes != mins {
+                    self.minutes = mins;
+                    self.clock = format!(" {} ", clock(hours, mins));
+                }
 
                 ui.label(
                     eframe::egui::RichText::new(format!(
                         "\u{1F4C5} {} ",
-                        &current_time.ts_to_str(
-                            true,
-                            true,
-                            Some(format!(" {} ", clock).to_string())
-                        )
+                        &current_time.ts_to_str(true, true, Some(&self.clock), &chrono::Local)
                     ))
                     .size(12.0)
                     .strong(),

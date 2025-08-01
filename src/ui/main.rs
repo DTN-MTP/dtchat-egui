@@ -138,6 +138,7 @@ impl UIState {
         let peer_manager = &self.peer_manager;
         let local_peer = self.peer_manager.local_peer();
         let current_time = DTChatTime::now();
+
         TopBottomPanel::top("header").show_inside(ui, |ui| {
             self.header.show(ui, local_peer, current_time);
         });

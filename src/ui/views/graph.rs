@@ -191,20 +191,19 @@ impl MessageGraphView {
         peer_manager: &PeerManager,
         current_time: DTChatTime,
     ) {
-        let make_time_formatter = |show_date: bool, show_time: bool, sep: Option<String>| {
+        let make_time_formatter = |show_date: bool, show_time: bool| {
             move |x: GridMark, _range: &RangeInclusive<f64>| {
                 let datetime = DTChatTime::from_timestamp_millis(x.value as i64).unwrap();
-                let sep_cloned = sep.clone();
-                datetime.ts_to_str(show_date, show_time, sep_cloned)
+                datetime.ts_to_str(show_date, show_time, None, &chrono::Local)
             }
         };
 
         let x_axes = vec![
             AxisHints::new_x()
-                .formatter(make_time_formatter(true, false, None))
+                .formatter(make_time_formatter(true, false))
                 .placement(egui_plot::VPlacement::Top),
             AxisHints::new_x()
-                .formatter(make_time_formatter(false, true, None))
+                .formatter(make_time_formatter(false, true))
                 .placement(egui_plot::VPlacement::Bottom),
         ];
 
@@ -273,7 +272,7 @@ impl MessageGraphView {
                     format!("{}: {:.*}%", name, 1, value.y)
                 } else {
                     let value = DTChatTime::from_timestamp_millis(value.x as i64).unwrap();
-                    value.ts_to_str(false, true, None)
+                    value.ts_to_str(false, true, None, &chrono::Local)
                 }
             })
             .height(plot_height)
@@ -347,8 +346,8 @@ impl MessageGraphView {
                                         "Message: {}\nSent by {}\ntx time: {}\nrx_time: {}{}",
                                         bar.name,
                                         formatter_name_for_closure,
-                                        tx_time.ts_to_str(date, true, None),
-                                        rx_time.ts_to_str(date, true, None),
+                                        tx_time.ts_to_str(date, true, None, &chrono::Local),
+                                        rx_time.ts_to_str(date, true, None, &chrono::Local),
                                         status_info
                                     )
                                 }));

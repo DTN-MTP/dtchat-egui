@@ -51,7 +51,7 @@ impl PrettyStr for DisplayEvent {
     fn to_pretty_str(&self) -> String {
         format!(
             "[{}] {}",
-            self.timestamp.ts_to_str(false, true, None),
+            self.timestamp.ts_to_str(false, true, None, &chrono::Local),
             self.message
         )
     }

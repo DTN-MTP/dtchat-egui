@@ -81,14 +81,14 @@ impl MessageListView {
             if self.show_timestamps {
                 // Format exact de dtchat_tui: [acked_time:send_time]
                 let receive_time_str = match msg.receive_time {
-                    Some(t) => t.ts_to_str(false, true, None),
+                    Some(t) => t.ts_to_str(false, true, None, &chrono::Local),
                     None => match msg.predicted_arrival_time {
-                        Some(pbat) => pbat.ts_to_str(false, true, Some("⌛".to_string())),
+                        Some(pbat) => pbat.ts_to_str(false, true, Some("⌛"), &chrono::Local),
                         None => " ?? ".to_string(),
                     },
                 };
 
-                let send_time_str = msg.send_time.ts_to_str(false, true, None);
+                let send_time_str = msg.send_time.ts_to_str(false, true, None, &chrono::Local);
                 let time_display = format!("[{}➡{}]", send_time_str, receive_time_str);
 
                 ui.colored_label(egui::Color32::LIGHT_GRAY, time_display);
