@@ -1,11 +1,14 @@
 use std::fmt;
 
 use dtchat_backend::Endpoint;
+use egui::Color32;
 use serde::Deserializer;
 use serde::{
     de::{self, Visitor},
     Deserialize,
 };
+
+use crate::utils::color::Color32FromStr;
 
 #[derive(Clone, Debug)]
 pub struct EndpointWrapper(pub Endpoint);
@@ -52,7 +55,7 @@ pub struct RawPeer {
     pub uuid: String,
     pub name: String,
     pub endpoints: Vec<EndpointWrapper>,
-    pub color: u32,
+    pub color: String,
 }
 
 // === Final Peer Struct You Want ===
@@ -62,29 +65,17 @@ pub struct Peer {
     pub uuid: String,
     pub name: String,
     pub endpoints: Vec<Endpoint>,
-    pub color: u32,
+    pub color: Color32,
 }
 
 // === Helper Conversion ===
-
 impl From<RawPeer> for Peer {
     fn from(raw: RawPeer) -> Self {
         Peer {
             uuid: raw.uuid,
             name: raw.name,
-            color: raw.color,
+            color: Color32::from_str(&raw.color),
             endpoints: raw.endpoints.into_iter().map(|e| e.into()).collect(),
-        }
-    }
-}
-
-impl Default for Peer {
-    fn default() -> Self {
-        Self {
-            uuid: "unknown".to_string(),
-            name: "Unknown".to_string(),
-            endpoints: Vec::new(),
-            color: 0,
         }
     }
 }

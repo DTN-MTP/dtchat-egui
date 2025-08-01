@@ -3,7 +3,7 @@ use crate::ui::main::{ProtoFilter, ViewType};
 use crate::utils::text::PrettyStr;
 use dtchat_backend::message::SortStrategy;
 use dtchat_backend::EndpointProto;
-use egui::{ComboBox, Ui};
+use egui::{ComboBox, Slider, Ui};
 
 pub struct MessageSettingsBar {
     last_sort_strategy_peer: Option<Peer>,
@@ -39,6 +39,8 @@ impl MessageSettingsBar {
         request_sort_strategy: &mut bool,
         protocol_filter: &mut ProtoFilter,
         request_protocol_filter: &mut bool,
+        max_message_count: &mut usize,
+        message_in_db: usize,
         peer_manager: &PeerManager,
         local_peer: &Peer,
     ) {
@@ -138,9 +140,28 @@ impl MessageSettingsBar {
 
                         });
                 });
+                let enable_slider= message_in_db > 0;
 
+                ui.separator();
+                // TODO, use this before using other sliders
+                ui.style_mut().spacing.slider_width = 60.0;
+                ui.add_enabled(
+                enable_slider,
+                {
+                    let displayed = *max_message_count;
+                    let str_display = if message_in_db == 0 {
+                        String::from("No messages in the DB")
+                    } else if *max_message_count == message_in_db {
+                        String::from("Showing all messages")
+                    } else if *max_message_count == 0 {
+                        String::from("Showing no messages")
+                    } else {
+                        format!("Showing the last {} messages", displayed)
+                    };
 
-
+                    Slider::new( max_message_count, message_in_db..=0).text(str_display)
+                }
+            );
             }
         });
         ui.add_space(3.0);

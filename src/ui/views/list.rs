@@ -1,27 +1,35 @@
-use crate::domain::peer::{Peer, PeerManager};
-use dtchat_backend::message::ChatMessage;
+use crate::{domain::peer::PeerManager, utils::clock::Clock};
+use dtchat_backend::{
+    message::{ChatMessage, MessageStatus},
+    time::DTChatTime,
+};
 use eframe::egui;
+use egui::RichText;
 
 pub struct MessageListView {
     pub show_timestamps: bool,
     pub compact_mode: bool,
+    pub clock: Clock,
 }
 
 impl MessageListView {
     pub fn new() -> Self {
+        let dumy_time = DTChatTime::now();
         Self {
             show_timestamps: true,
             compact_mode: false,
+            clock: Clock::new(&dumy_time, true),
         }
     }
 
     pub fn show(
         &mut self,
         ui: &mut egui::Ui,
-        messages: &Vec<ChatMessage>,
-        local_peer: &Peer,
+        messages: &[ChatMessage],
+        current_time: &DTChatTime,
         peer_manager: &PeerManager,
     ) {
+        self.clock.update(current_time);
         egui::ScrollArea::vertical()
             .auto_shrink([false; 2])
             .stick_to_bottom(true)
@@ -29,8 +37,8 @@ impl MessageListView {
                 if messages.is_empty() {
                     ui.colored_label(egui::Color32::GRAY, "Empty chat");
                 } else {
-                    for message in messages.iter().rev() {
-                        self.render(ui, message, &local_peer.uuid, peer_manager);
+                    for message in messages.iter() {
+                        self.render(ui, message, peer_manager, self.clock.to_string());
                         ui.add_space(4.0);
                     }
                 }
@@ -42,56 +50,59 @@ impl MessageListView {
         &self,
         ui: &mut egui::Ui,
         msg: &ChatMessage,
-        local_uuid: &str,
         peer_manager: &PeerManager,
+        clock_str: String,
     ) {
         ui.horizontal(|ui| {
             // Trouver le nom du peer expéditeur
-            let sender_name = if msg.sender_uuid == local_uuid {
-                "You" // Message local
+            let local_peer = peer_manager.local_peer();
+
+            let peer = if local_peer.uuid == msg.sender_uuid {
+                Some(local_peer)
             } else {
-                // Chercher le peer dans la liste
                 peer_manager
                     .peers()
                     .iter()
                     .find(|p| p.uuid == msg.sender_uuid)
-                    .map(|p| p.name.as_str())
-                    .unwrap_or("Unknown")
             };
-
-            ui.label(format!("[{}]", sender_name));
-
+            let mut sep = "➡";
             // Status indicator avec couleurs selon le statut
-            let (status_text, status_color) = match &msg.status {
-                dtchat_backend::message::MessageStatus::Failed => ("FAILED", egui::Color32::RED),
-                dtchat_backend::message::MessageStatus::ReceivedByPeer => {
-                    ("ACKED", egui::Color32::GREEN)
+            match &msg.status {
+                MessageStatus::Failed => ui.colored_label(egui::Color32::RED, "[\u{2716}]"),
+                MessageStatus::ReceivedByPeer => {
+                    ui.colored_label(egui::Color32::GREEN, "[\u{2714}]")
                 }
-                dtchat_backend::message::MessageStatus::Sent => ("SENT", egui::Color32::LIGHT_GRAY),
-                dtchat_backend::message::MessageStatus::Sending => {
-                    ("SENDING", egui::Color32::YELLOW)
-                }
-                dtchat_backend::message::MessageStatus::Received => {
-                    ("RECEIVED", egui::Color32::LIGHT_BLUE)
-                }
+                MessageStatus::Sent => ui.colored_label(egui::Color32::LIGHT_BLUE, "[\u{1F680}]"),
+                MessageStatus::Sending => ui.colored_label(egui::Color32::YELLOW, "[\u{1F4E4}]"),
+                MessageStatus::Received => ui.colored_label(egui::Color32::GREEN, "[\u{1F4E5}]"),
             };
-
-            ui.colored_label(status_color, format!("[{}]", status_text));
 
             if self.show_timestamps {
                 // Format exact de dtchat_tui: [acked_time:send_time]
                 let receive_time_str = match msg.receive_time {
                     Some(t) => t.ts_to_str(false, true, None, &chrono::Local),
                     None => match msg.predicted_arrival_time {
-                        Some(pbat) => pbat.ts_to_str(false, true, Some("⌛"), &chrono::Local),
-                        None => " ?? ".to_string(),
+                        Some(pbat) => {
+                            if msg.status != MessageStatus::Failed {
+                                sep = &clock_str;
+                            } else {
+                                sep = "\u{1F6AB}";
+                            }
+                            pbat.ts_to_str(false, true, None, &chrono::Local)
+                        }
+                        None => "???".to_string(),
                     },
                 };
 
                 let send_time_str = msg.send_time.ts_to_str(false, true, None, &chrono::Local);
-                let time_display = format!("[{}➡{}]", send_time_str, receive_time_str);
+                let time_display = format!("[{}{}{}]", send_time_str, sep, receive_time_str);
 
                 ui.colored_label(egui::Color32::LIGHT_GRAY, time_display);
+                let peer_name = match peer {
+                    Some(p) => p.name.clone(),
+                    None => "Unknown".to_string(),
+                };
+                ui.label(RichText::new(format!("{}:", peer_name)).strong());
             }
 
             // Message text avec troncature exacte de dtchat_tui (40 chars -> 37 + "...")

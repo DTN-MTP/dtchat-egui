@@ -11,6 +11,7 @@ pub struct MessageGraphView {
     show_current_time: bool,
     active_participants: HashMap<String, String>,
     filtered_participants: HashSet<String>,
+    hovered: bool,
 }
 #[allow(dead_code)]
 trait AutoReset {
@@ -33,12 +34,13 @@ impl MessageGraphView {
             show_current_time: true,
             active_participants: HashMap::new(),
             filtered_participants: HashSet::new(),
+            hovered: false,
         }
     }
 
     fn update_participants(
         &mut self,
-        messages: &Vec<ChatMessage>,
+        messages: &[ChatMessage],
         peers: &[Peer],
         local_peer_uuid: &str,
     ) {
@@ -186,7 +188,7 @@ impl MessageGraphView {
     pub fn show(
         &mut self,
         ui: &mut egui::Ui,
-        messages: &Vec<ChatMessage>,
+        messages: &[ChatMessage],
         local_peer_uuid: &str,
         peer_manager: &PeerManager,
         current_time: DTChatTime,
@@ -215,9 +217,12 @@ impl MessageGraphView {
         ui.horizontal(|ui| {
             ui.checkbox(&mut self.auto_bounds, "Auto_bounds");
         });
-        // drag must cancel autobound
+
+        // drag or scroll must cancel autobound
+        // use hovered to treat this only if we are interacting with the graph
+        // otherwise, other elements can trigger this logic (Sliders with decidedly_dragging)
         ui.input(|i| {
-            if i.pointer.is_decidedly_dragging() || i.raw_scroll_delta.y != 0.0 {
+            if self.hovered && (i.pointer.is_decidedly_dragging() || i.raw_scroll_delta.y != 0.0) {
                 self.auto_bounds = false;
             }
         });
@@ -254,7 +259,7 @@ impl MessageGraphView {
         };
         let plot_height = ui.available_height().max(300.0);
 
-        Plot::new("DTChat Timeline")
+        let plt = Plot::new("DTChat Timeline")
             .allow_zoom(true)
             .allow_drag(true)
             .legend(Legend::default().position(egui_plot::Corner::LeftTop))
@@ -357,6 +362,7 @@ impl MessageGraphView {
                     }
                 }
             });
+        self.hovered = plt.response.hovered();
     }
 }
 

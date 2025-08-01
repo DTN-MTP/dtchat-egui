@@ -68,7 +68,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         "DTChat",
         options,
         Box::new(
-            move |_| -> Result<Box<dyn App>, Box<dyn Error + Send + Sync>> { Ok(Box::new(app)) },
+            move |cc| -> Result<Box<dyn App>, Box<dyn Error + Send + Sync>> {
+                cc.egui_ctx.style_mut(|style| {
+                    style.interaction.tooltip_delay = 0.33;
+                    // for (_text_style, font_id) in style.text_styles.iter_mut() {
+                    //     font_id.size *= 1.2;
+                    // }
+                });
+
+                Ok(Box::new(app))
+            },
         ),
     )?;
     Ok(())

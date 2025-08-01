@@ -7,7 +7,7 @@ peer_list:
       - "bp ipn:10.2"
       - "tcp 127.0.0.1:6500"
       - "udp 127.0.0.1:6550"
-    color: 0
+    color: MAGENTA
 
   - uuid: "2"
     name: Instance 2
@@ -15,14 +15,15 @@ peer_list:
       - "bp ipn:20.2"
       - "tcp 127.0.0.1:7500"
       - "udp 127.0.0.1:7550"
-    color: 1
+    color: BLUE
+
   - uuid: "3"
     name: Instance 3
     endpoints:
       - "bp ipn:30.2"
       - "tcp 127.0.0.1:8000"
       - "udp 127.0.0.1:8050"
-    color: 2
+    color: ORANGE
 
 room_list:
   - uuid: 1

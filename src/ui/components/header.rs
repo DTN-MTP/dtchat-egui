@@ -2,19 +2,17 @@ use dtchat_backend::time::DTChatTime;
 
 use crate::{
     domain::peer::Peer,
-    utils::{text::PrettyStr, time::clock},
+    utils::{clock::Clock, text::PrettyStr},
 };
 
 pub struct Header {
-    minutes: u32,
-    clock: String,
+    clock: Clock,
 }
 
 impl Header {
     pub fn new() -> Self {
         Self {
-            minutes: 100,
-            clock: String::new(),
+            clock: Clock::new(&DTChatTime::now(), false),
         }
     }
 
@@ -26,20 +24,26 @@ impl Header {
                 ui.label(eframe::egui::RichText::new("Delay-Tolerant Messaging").size(10.5));
                 ui.add_space(10.0);
 
-                let (mins, hours) = current_time.mins_hours(&chrono::Local);
-                if self.minutes != mins {
-                    self.minutes = mins;
-                    self.clock = format!(" {} ", clock(hours, mins));
-                }
+                self.clock.update(&current_time);
 
-                ui.label(
-                    eframe::egui::RichText::new(format!(
-                        "\u{1F4C5} {} ",
-                        &current_time.ts_to_str(true, true, Some(&self.clock), &chrono::Local)
-                    ))
-                    .size(12.0)
-                    .strong(),
-                );
+                if ui
+                    .label(
+                        eframe::egui::RichText::new(format!(
+                            "\u{1F4C5} {} ",
+                            &current_time.ts_to_str(
+                                true,
+                                true,
+                                Some(&self.clock.to_string()),
+                                &chrono::Local
+                            )
+                        ))
+                        .size(12.0)
+                        .strong(),
+                    )
+                    .clicked()
+                {
+                    self.clock.switch_anim(&current_time);
+                }
             });
 
             ui.allocate_ui_with_layout(

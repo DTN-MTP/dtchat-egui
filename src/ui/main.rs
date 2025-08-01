@@ -81,6 +81,7 @@ pub struct UIState {
     pub views: Views,
     pub current_view: ViewType,
     pub header: Header,
+    pub max_message_count: usize,
     pub sort_strategy: SortStrategy,
     pub request_sort_strategy: bool,
     pub protocol_filter: ProtoFilter,
@@ -104,6 +105,7 @@ impl UIState {
             current_view: ViewType::MessageGraph,
             header: Header::new(),
             request_sort_strategy: true,
+            max_message_count: 0,
             sort_strategy: SortStrategy::Standard,
             request_protocol_filter: true,
             protocol_filter: ProtoFilter::NoFilter,
@@ -122,12 +124,17 @@ impl UIState {
         app_events: VecDeque<DisplayEvent>,
         network_events: VecDeque<DisplayEvent>,
     ) {
+        let sticky = self.messages.len() == self.max_message_count;
+
         self.messages = chat_model.lock().unwrap().get_all_messages();
         self.pbat_support_by_model = chat_model.lock().unwrap().is_pbat_enabled();
         self.request_protocol_filter = true;
         self.request_sort_strategy = true;
         self.app_events = app_events;
         self.network_events = network_events;
+        if sticky {
+            self.max_message_count = self.messages.len()
+        }
     }
 
     pub fn show(
@@ -151,6 +158,8 @@ impl UIState {
                 &mut self.request_sort_strategy,
                 &mut self.protocol_filter,
                 &mut self.request_protocol_filter,
+                &mut self.max_message_count,
+                self.messages.len(),
                 peer_manager,
                 &local_peer,
             );
@@ -182,11 +191,16 @@ impl UIState {
                 self.request_sort_strategy = false;
             }
 
+            let start_idx = self
+                .messages_to_display
+                .len()
+                .saturating_sub(self.max_message_count);
+
             match self.current_view {
                 ViewType::MessageGraph => {
                     self.views.message_graph.show(
                         ui,
-                        &self.messages_to_display,
+                        &self.messages_to_display[start_idx..],
                         &local_peer.uuid,
                         &peer_manager,
                         current_time,
@@ -195,8 +209,8 @@ impl UIState {
                 ViewType::MessageList => {
                     self.views.message_list.show(
                         ui,
-                        &self.messages_to_display,
-                        &local_peer,
+                        &self.messages_to_display[start_idx..],
+                        &current_time,
                         &peer_manager,
                     );
                 }
