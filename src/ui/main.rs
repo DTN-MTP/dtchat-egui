@@ -1,5 +1,4 @@
 use crate::app::DisplayEvent;
-use crate::domain::peer::PeerManager;
 use crate::ui::components::header::Header;
 use crate::ui::components::message_forge::MessageForge;
 use crate::ui::components::message_settings_bar::MessageSettingsBar;
@@ -7,7 +6,7 @@ use crate::ui::views::graph::MessageGraphView;
 use crate::ui::views::list::MessageListView;
 use crate::ui::views::settings::SettingsView;
 use crate::utils::text::PrettyStr;
-use dtchat_backend::dtchat::ChatModel;
+use dtchat_backend::dtchat::{ChatModel, Peer};
 use dtchat_backend::message::{
     filter_by_network_endpoint, sort_with_strategy, ChatMessage, SortStrategy,
 };
@@ -93,11 +92,12 @@ pub struct UIState {
     messages: Vec<ChatMessage>,
     app_events: VecDeque<DisplayEvent>,
     network_events: VecDeque<DisplayEvent>,
-    peer_manager: PeerManager,
+    local_peer: Peer,
+    other_peers: Vec<Peer>,
 }
 
 impl UIState {
-    pub fn new(peer_manager: PeerManager) -> Self {
+    pub fn new(local_peer: Peer, other_peers: Vec<Peer>) -> Self {
         Self {
             message_forge: MessageForge::new(),
             message_settings_bar: MessageSettingsBar::new(),
@@ -113,7 +113,8 @@ impl UIState {
             messages: vec![],
             app_events: VecDeque::new(),
             network_events: VecDeque::new(),
-            peer_manager,
+            local_peer,
+            other_peers,
             pbat_support_by_model: false,
         }
     }
@@ -142,12 +143,10 @@ impl UIState {
         ui: &mut Ui,
         chat_model: &Arc<Mutex<ChatModel>>,
     ) -> Option<(String, String)> {
-        let peer_manager = &self.peer_manager;
-        let local_peer = self.peer_manager.local_peer();
         let current_time = DTChatTime::now();
 
         TopBottomPanel::top("header").show_inside(ui, |ui| {
-            self.header.show(ui, local_peer, current_time);
+            self.header.show(ui, &self.local_peer, current_time);
         });
 
         TopBottomPanel::top("message_settings_bar").show_inside(ui, |ui| {
@@ -160,16 +159,15 @@ impl UIState {
                 &mut self.request_protocol_filter,
                 &mut self.max_message_count,
                 self.messages.len(),
-                peer_manager,
-                &local_peer,
+                &self.local_peer,
+                &self.other_peers,
             );
         });
 
         TopBottomPanel::bottom("message_forge_panel").show_inside(ui, |ui| {
             self.message_forge.show(
                 ui,
-                peer_manager.peers(),
-                &local_peer.uuid,
+                &self.other_peers,
                 chat_model,
                 self.pbat_support_by_model,
             );
@@ -201,8 +199,8 @@ impl UIState {
                     self.views.message_graph.show(
                         ui,
                         &self.messages_to_display[start_idx..],
-                        &local_peer.uuid,
-                        &peer_manager,
+                        &self.local_peer,
+                        &self.other_peers,
                         current_time,
                     );
                 }
@@ -211,7 +209,8 @@ impl UIState {
                         ui,
                         &self.messages_to_display[start_idx..],
                         &current_time,
-                        &peer_manager,
+                        &self.local_peer,
+                        &self.other_peers,
                     );
                 }
                 ViewType::Network => {

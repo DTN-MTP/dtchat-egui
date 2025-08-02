@@ -1,4 +1,4 @@
-use crate::domain::peer::{Peer, PeerManager};
+use dtchat_backend::dtchat::Peer;
 use dtchat_backend::message::{ChatMessage, MessageStatus};
 use dtchat_backend::time::DTChatTime;
 use egui::Color32;
@@ -189,8 +189,8 @@ impl MessageGraphView {
         &mut self,
         ui: &mut egui::Ui,
         messages: &[ChatMessage],
-        local_peer_uuid: &str,
-        peer_manager: &PeerManager,
+        local_peer: &Peer,
+        other_peers: &Vec<Peer>,
         current_time: DTChatTime,
     ) {
         let make_time_formatter = |show_date: bool, show_time: bool| {
@@ -210,9 +210,9 @@ impl MessageGraphView {
         ];
 
         let now = current_time.timestamp_millis() as f64;
-        let peers = peer_manager.peers();
+        let peers = &other_peers;
 
-        self.update_participants(messages, peers, local_peer_uuid);
+        self.update_participants(messages, peers, &local_peer.uuid);
 
         ui.horizontal(|ui| {
             ui.checkbox(&mut self.auto_bounds, "Auto_bounds");

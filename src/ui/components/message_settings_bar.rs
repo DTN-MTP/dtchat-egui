@@ -1,6 +1,6 @@
-use crate::domain::peer::{Peer, PeerManager};
 use crate::ui::main::{ProtoFilter, ViewType};
 use crate::utils::text::PrettyStr;
+use dtchat_backend::dtchat::Peer;
 use dtchat_backend::message::SortStrategy;
 use dtchat_backend::EndpointProto;
 use egui::{ComboBox, Slider, Ui};
@@ -41,8 +41,8 @@ impl MessageSettingsBar {
         request_protocol_filter: &mut bool,
         max_message_count: &mut usize,
         message_in_db: usize,
-        peer_manager: &PeerManager,
         local_peer: &Peer,
+        other_peers: &Vec<Peer>,
     ) {
         ui.add_space(3.0);
         ui.horizontal(|ui| {
@@ -124,12 +124,12 @@ impl MessageSettingsBar {
                         ui.menu_button("Relative", |ui| {
                             let mut clicked = None;
 
-                             for peer in peer_manager.peers() {
-                            if peer.uuid != local_peer.uuid {
+                             for peer in other_peers {
+
                                 if ui.button(peer.name.as_str()).on_hover_text(format!("Sorted by receiving time for peer {} and sending times for the other peers", peer.name)).clicked() {
                                     clicked = Some(peer.clone());
                                 }
-                             }
+
                              if let Some(ref peer) = clicked {
                                 *request_sort_strategy = true;
                                 *sort_strategy = SortStrategy::Relative(peer.uuid.clone());

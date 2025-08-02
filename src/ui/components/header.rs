@@ -1,9 +1,6 @@
-use dtchat_backend::time::DTChatTime;
+use dtchat_backend::{dtchat::Peer, time::DTChatTime};
 
-use crate::{
-    domain::peer::Peer,
-    utils::{clock::Clock, text::PrettyStr},
-};
+use crate::utils::{clock::Clock, text::PrettyStr};
 
 pub struct Header {
     clock: Clock,

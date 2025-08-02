@@ -1,4 +1,7 @@
-use dtchat_backend::dtchat::ChatModel;
+use crate::ui::main::UIState;
+use crate::utils::text::PrettyStr;
+use crate::utils::uuid::safe_id_display;
+use dtchat_backend::dtchat::{ChatModel, Peer};
 use dtchat_backend::event::{
     AppEventObserver, ChatAppErrorEvent, ChatAppEvent, ChatAppInfoEvent,
     ErrorEvent::{ConnectionFailed, ReceiveFailed, SendFailed, SocketError},
@@ -10,11 +13,6 @@ use eframe::{egui, App};
 use egui::{CentralPanel, Color32};
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
-
-use crate::domain::peer::{Peer, PeerManager};
-use crate::ui::main::UIState;
-use crate::utils::text::PrettyStr;
-use crate::utils::uuid::safe_id_display;
 
 #[derive(Clone, Debug)]
 pub enum EventLevel {
@@ -99,7 +97,7 @@ impl EventHandler {
 
     pub fn handle_chat_app_event(&mut self, app_event: ChatAppEvent) {
         match app_event {
-            ChatAppEvent::Info(info_event) => match info_event {
+            ChatAppEvent::Message(info_event) => match info_event {
                 ChatAppInfoEvent::Sending(msg) => {
                     self.add_app_event(
                         EventLevel::Info,
@@ -281,6 +279,9 @@ impl EventHandler {
                     },
                 };
             }
+            ChatAppEvent::Info(info) => {
+                self.add_app_event(EventLevel::Info, format!("Internal: {}", info))
+            }
         }
 
         self.refresh_model_request = true;
@@ -311,7 +312,7 @@ impl DTChatApp {
         Self {
             event_handler,
             chat_model,
-            ui: UIState::new(PeerManager::new(local_peer.clone(), dist_peers.clone())),
+            ui: UIState::new(local_peer.clone(), dist_peers.clone()),
             context_initialized: false,
         }
     }

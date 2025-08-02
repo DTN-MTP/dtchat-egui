@@ -1,5 +1,5 @@
-use crate::{domain::peer::Peer, utils::text::PrettyStr};
-use dtchat_backend::dtchat::ChatModel;
+use crate::utils::text::PrettyStr;
+use dtchat_backend::dtchat::{ChatModel, Peer};
 use dtchat_backend::Endpoint;
 use eframe::egui;
 use egui::{ComboBox, RichText};
@@ -34,17 +34,11 @@ impl MessageForge {
         &mut self,
         ui: &mut egui::Ui,
         peers: &[Peer],
-        local_peer_uuid: &str,
         chat_model: &Arc<Mutex<ChatModel>>,
         pbat_support_by_model: bool,
     ) {
-        let available_peers: Vec<&Peer> = peers
-            .iter()
-            .filter(|peer| peer.uuid != local_peer_uuid)
-            .collect();
-
-        if self.selected_peer.is_none() && !available_peers.is_empty() {
-            self.selected_peer = Some(available_peers[0].clone());
+        if self.selected_peer.is_none() && !peers.is_empty() {
+            self.selected_peer = Some(peers[0].clone());
         }
         if self.selected_endpoint.is_none() {
             self.select_first_endpoint();
@@ -55,7 +49,7 @@ impl MessageForge {
             ui.label("To:");
             let selected_peer = self.selected_peer.clone();
 
-            ui.add_enabled_ui(available_peers.len() > 0, |ui| {
+            ui.add_enabled_ui(peers.len() > 0, |ui| {
                 ComboBox::from_id_salt("peer_selector")
                     .selected_text(
                         selected_peer
@@ -64,7 +58,7 @@ impl MessageForge {
                             .unwrap_or_else(|| "⚠ no peers".to_string()),
                     )
                     .show_ui(ui, |ui| {
-                        for peer in &available_peers {
+                        for peer in peers {
                             if ui
                                 .selectable_label(
                                     selected_peer.as_ref().map(|p| &p.uuid) == Some(&peer.uuid),

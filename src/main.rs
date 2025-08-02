@@ -2,53 +2,25 @@ use std::error::Error;
 use std::sync::{Arc, Mutex};
 
 mod app;
-mod config;
-mod domain;
 mod ui;
 #[macro_use]
 mod utils;
 
 use app::DTChatApp;
-use config::initialize_app_config;
-use dtchat_backend::db::simple_vec::SimpleVecDB;
-use dtchat_backend::dtchat::{ChatModel, Peer as BackendPeer};
-use dtchat_backend::Endpoint;
+use dtchat_backend::dtchat::ChatModel;
+
 use dtchat_backend::Engine;
 use eframe::{App, NativeOptions};
-
-use crate::domain::peer::Peer;
-
-fn convert_peer_to_backend(domain_peer: &Peer) -> BackendPeer {
-    let endpoints: Vec<Endpoint> = domain_peer.endpoints.clone();
-    BackendPeer {
-        uuid: domain_peer.uuid.clone(),
-        name: domain_peer.name.clone(),
-        endpoints,
-    }
-}
 
 fn main() -> Result<(), Box<dyn Error>> {
     let event_handler = Arc::new(Mutex::new(app::EventHandler::new(100)));
 
-    let app_config = initialize_app_config(Some(event_handler.clone()));
-    let local_peer = app_config.local_peer;
-    let shared_peers = app_config.peer_list;
-
-    let backend_local_peer = convert_peer_to_backend(&local_peer);
-    let backend_peers: Vec<BackendPeer> =
-        shared_peers.iter().map(convert_peer_to_backend).collect();
-
-    let db = Box::new(SimpleVecDB::default());
-
-    let model = ChatModel::new(backend_local_peer, backend_peers.clone(), db);
+    let model = ChatModel::new();
+    let local = model.get_localpeer();
+    let others = model.get_other_peers();
     let model_arc = Arc::new(Mutex::new(model));
 
-    let app = DTChatApp::new(
-        model_arc.clone(),
-        local_peer,
-        shared_peers,
-        event_handler.clone(),
-    );
+    let app = DTChatApp::new(model_arc.clone(), local, others, event_handler.clone());
 
     model_arc
         .lock()

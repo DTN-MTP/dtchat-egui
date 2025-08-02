@@ -1,5 +1,6 @@
-use crate::{domain::peer::PeerManager, utils::clock::Clock};
+use crate::utils::clock::Clock;
 use dtchat_backend::{
+    dtchat::Peer,
     message::{ChatMessage, MessageStatus},
     time::DTChatTime,
 };
@@ -27,7 +28,8 @@ impl MessageListView {
         ui: &mut egui::Ui,
         messages: &[ChatMessage],
         current_time: &DTChatTime,
-        peer_manager: &PeerManager,
+        local_peer: &Peer,
+        other_peers: &Vec<Peer>,
     ) {
         self.clock.update(current_time);
         egui::ScrollArea::vertical()
@@ -38,7 +40,7 @@ impl MessageListView {
                     ui.colored_label(egui::Color32::GRAY, "Empty chat");
                 } else {
                     for message in messages.iter() {
-                        self.render(ui, message, peer_manager, self.clock.to_string());
+                        self.render(ui, message, local_peer, other_peers, self.clock.to_string());
                         ui.add_space(4.0);
                     }
                 }
@@ -50,20 +52,17 @@ impl MessageListView {
         &self,
         ui: &mut egui::Ui,
         msg: &ChatMessage,
-        peer_manager: &PeerManager,
+        local_peer: &Peer,
+        other_peers: &Vec<Peer>,
         clock_str: String,
     ) {
         ui.horizontal(|ui| {
             // Trouver le nom du peer expéditeur
-            let local_peer = peer_manager.local_peer();
 
             let peer = if local_peer.uuid == msg.sender_uuid {
                 Some(local_peer)
             } else {
-                peer_manager
-                    .peers()
-                    .iter()
-                    .find(|p| p.uuid == msg.sender_uuid)
+                other_peers.iter().find(|p| p.uuid == msg.sender_uuid)
             };
             let mut sep = "➡";
             // Status indicator avec couleurs selon le statut

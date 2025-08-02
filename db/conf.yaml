@@ -1,4 +1,5 @@
-a_sabr: "../host.rc"
+cp_path: "./db/ion.cp"
+db_type: YamlVec
 
 peer_list:
   - uuid: "1"
