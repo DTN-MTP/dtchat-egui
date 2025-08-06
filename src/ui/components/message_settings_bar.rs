@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ui::main::{ProtoFilter, ViewType};
 use crate::utils::text::PrettyStr;
-use dtchat_backend::dtchat::Peer;
+use dtchat_backend::dtchat::{Peer, Room};
 use dtchat_backend::message::SortStrategy;
 use dtchat_backend::EndpointProto;
 use egui::{ComboBox, Slider, Ui};
@@ -45,6 +45,8 @@ impl MessageSettingsBar {
         message_in_db: usize,
         local_peer: &Peer,
         other_peers: &HashMap<String, Peer>,
+        _rooms: &HashMap<String, Room>,
+        _selected_room: &mut Option<Room>,
     ) {
         ui.add_space(3.0);
         ui.horizontal(|ui| {
@@ -108,39 +110,61 @@ impl MessageSettingsBar {
 
                 ui.separator();
 
-                ui.label("Sort strategy:");
+
+            // ui.label("Room:");
+            // egui::ComboBox::from_id_salt("Select Room")
+            //     .selected_text(match selected_room {  // Remove & since selected_room is already &mut
+            //         Some(room) => &room.name,
+            //         None => "All Messages",
+            //     })
+            //     .show_ui(ui, |ui| {
+            //         // "All Messages" option (None)
+            //         ui.selectable_value(selected_room, None, "All Messages");
+
+            //         // Individual room options
+            //         for (_room_uuid, room) in rooms {
+            //             ui.selectable_value(
+            //                 selected_room,
+            //                 Some(room.clone()),
+            //                 &room.name,
+            //             );
+            //         }
+            //     });
+            // ui.separator();
+
+                ui.label("Sorting:");
                 ui.menu_button(get_str_for_strat(local_peer.uuid.clone(), self.last_sort_strategy_peer.clone(), sort_strategy), |ui| {
-                        if ui.button("Standard").on_hover_text("Sorted by sending times").clicked() {
+                    if ui.button("Standard").on_hover_text("Sorted by sending times").clicked() {
 
-                            *request_sort_strategy = true;
-                            *sort_strategy = SortStrategy::Standard;
-                            self.last_sort_strategy_peer = None;
-                            ui.close_menu();
-                        }
-                        if ui.button("Local").on_hover_text("Sorted by receiving time for the local peer and sending times for the other peers").clicked() {
-                            *request_sort_strategy = true;
-                            *sort_strategy = SortStrategy::Relative(local_peer.uuid.clone());
-                            self.last_sort_strategy_peer = Some(local_peer.clone());
-                            ui.close_menu();
-                        }
-                        ui.menu_button("Relative", |ui| {
-                            let mut clicked = None;
+                        *request_sort_strategy = true;
+                        *sort_strategy = SortStrategy::Standard;
+                        self.last_sort_strategy_peer = None;
+                        ui.close_menu();
+                    }
+                    if ui.button("Local").on_hover_text("Sorted by receiving time for the local peer and sending times for the other peers").clicked() {
+                        *request_sort_strategy = true;
+                        *sort_strategy = SortStrategy::Relative(local_peer.uuid.clone());
+                        self.last_sort_strategy_peer = Some(local_peer.clone());
+                        ui.close_menu();
+                    }
+                    ui.menu_button("Relative", |ui| {
+                        let mut clicked = None;
 
-                             for (peer_uuid, peer) in other_peers {
+                            for (peer_uuid, peer) in other_peers {
 
-                                if ui.button(peer.name.as_str()).on_hover_text(format!("Sorted by receiving time for peer {} and sending times for the other peers", peer.name)).clicked() {
-                                    clicked = Some(peer.clone());
-                                }
-
-                             if let Some(ref peer) = clicked {
-                                *request_sort_strategy = true;
-                                *sort_strategy = SortStrategy::Relative(peer_uuid.clone());
-                                self.last_sort_strategy_peer = Some(peer.clone());
-                                ui.close_menu();
-                             }
+                            if ui.button(peer.name.as_str()).on_hover_text(format!("Sorted by receiving time for peer {} and sending times for the other peers", peer.name)).clicked() {
+                                clicked = Some(peer.clone());
                             }
 
-                        });
+                            if let Some(ref peer) = clicked {
+                            *request_sort_strategy = true;
+                            *sort_strategy = SortStrategy::Relative(peer_uuid.clone());
+                            self.last_sort_strategy_peer = Some(peer.clone());
+                            ui.close_menu();
+                            }
+                        }
+
+                    });
                 });
                 let enable_slider= message_in_db > 0;
 

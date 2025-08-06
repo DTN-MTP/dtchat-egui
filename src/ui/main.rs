@@ -86,6 +86,7 @@ pub struct UIState {
     pub protocol_filter: ProtoFilter,
     pub request_protocol_filter: bool,
     pub pbat_support_by_model: bool,
+    pub current_room: Option<Room>, // uuid
 
     // data
     messages_to_display: Vec<ChatMessage>,
@@ -98,7 +99,11 @@ pub struct UIState {
 }
 
 impl UIState {
-    pub fn new(local: Peer, other_peers: HashMap<String, Peer>, rooms:  HashMap<String, Room>) -> Self {
+    pub fn new(
+        local: Peer,
+        other_peers: HashMap<String, Peer>,
+        rooms: HashMap<String, Room>,
+    ) -> Self {
         Self {
             message_forge: MessageForge::new(),
             message_settings_bar: MessageSettingsBar::new(),
@@ -118,8 +123,8 @@ impl UIState {
             other_peers,
             _rooms: rooms,
             pbat_support_by_model: false,
+            current_room: None,
         }
-
     }
 
     pub fn will_lock_model_to_refresh(
@@ -164,6 +169,8 @@ impl UIState {
                 self.messages.len(),
                 &self.local_peer,
                 &self.other_peers,
+                &self._rooms,
+                &mut self.current_room,
             );
         });
 
