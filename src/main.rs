@@ -16,11 +16,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let event_handler = Arc::new(Mutex::new(app::EventHandler::new(100)));
 
     let model = ChatModel::new();
-    let local = model.get_localpeer();
-    let others = model.get_other_peers();
     let model_arc = Arc::new(Mutex::new(model));
 
-    let app = DTChatApp::new(model_arc.clone(), local, others, event_handler.clone());
+    let app = DTChatApp::new(model_arc.clone(), event_handler.clone());
 
     model_arc
         .lock()

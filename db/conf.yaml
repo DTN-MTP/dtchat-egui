@@ -30,6 +30,9 @@ room_list:
   - uuid: 1
     name: Default
     participants:
-      - Instance 1
-      - Instance 2
-      - Instance 3
+      - peer_uuid: "1"
+        endpoint: "tcp 127.0.0.1:6500"
+      - peer_uuid: "2"
+        endpoint: "udp 127.0.0.1:7550"
+      - peer_uuid: "3"
+        endpoint: "tcp 127.0.0.1:8000"

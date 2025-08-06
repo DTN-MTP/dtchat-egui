@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::utils::clock::Clock;
 use dtchat_backend::{
     dtchat::Peer,
@@ -29,7 +31,7 @@ impl MessageListView {
         messages: &[ChatMessage],
         current_time: &DTChatTime,
         local_peer: &Peer,
-        other_peers: &Vec<Peer>,
+        other_peers: &HashMap<String, Peer>,
     ) {
         self.clock.update(current_time);
         egui::ScrollArea::vertical()
@@ -53,7 +55,7 @@ impl MessageListView {
         ui: &mut egui::Ui,
         msg: &ChatMessage,
         local_peer: &Peer,
-        other_peers: &Vec<Peer>,
+        other_peers: &HashMap<String, Peer>,
         clock_str: String,
     ) {
         ui.horizontal(|ui| {
@@ -62,7 +64,7 @@ impl MessageListView {
             let peer = if local_peer.uuid == msg.sender_uuid {
                 Some(local_peer)
             } else {
-                other_peers.iter().find(|p| p.uuid == msg.sender_uuid)
+                other_peers.get(&msg.sender_uuid)
             };
             let mut sep = "➡";
             // Status indicator avec couleurs selon le statut

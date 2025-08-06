@@ -1,7 +1,7 @@
 use crate::ui::main::UIState;
 use crate::utils::text::PrettyStr;
 use crate::utils::uuid::safe_id_display;
-use dtchat_backend::dtchat::{ChatModel, Peer};
+use dtchat_backend::dtchat::ChatModel;
 use dtchat_backend::event::{
     AppEventObserver, ChatAppErrorEvent, ChatAppEvent, ChatAppInfoEvent,
     ErrorEvent::{ConnectionFailed, ReceiveFailed, SendFailed, SocketError},
@@ -303,16 +303,14 @@ pub struct DTChatApp {
 }
 
 impl DTChatApp {
-    pub fn new(
-        chat_model: Arc<Mutex<ChatModel>>,
-        local_peer: Peer,
-        dist_peers: Vec<Peer>,
-        event_handler: Arc<Mutex<EventHandler>>,
-    ) -> Self {
+    pub fn new(chat_model: Arc<Mutex<ChatModel>>, event_handler: Arc<Mutex<EventHandler>>) -> Self {
+        let local = chat_model.lock().unwrap().get_localpeer();
+        let peers = chat_model.lock().unwrap().get_other_peers();
+        let rooms = chat_model.lock().unwrap().get_rooms();
         Self {
             event_handler,
             chat_model,
-            ui: UIState::new(local_peer.clone(), dist_peers.clone()),
+            ui: UIState::new(local, peers, rooms),
             context_initialized: false,
         }
     }

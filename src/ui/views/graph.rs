@@ -41,26 +41,10 @@ impl MessageGraphView {
     fn update_participants(
         &mut self,
         messages: &[ChatMessage],
-        peers: &[Peer],
+        peers: &HashMap<String, Peer>,
         local_peer_uuid: &str,
     ) {
         self.active_participants.clear();
-
-        // Helper function to find peer and get name
-        let get_peer_name = |uuid: &str| -> String {
-            if uuid == local_peer_uuid {
-                "Me".to_string()
-            } else {
-                peers
-                    .iter()
-                    .find(|p| p.uuid == uuid)
-                    .map(|p| p.name.clone())
-                    .unwrap_or_else(|| {
-                        let short_uuid = if uuid.len() >= 8 { &uuid[..8] } else { uuid };
-                        format!("Peer {}", short_uuid)
-                    })
-            }
-        };
 
         // Collect all unique sender UUIDs from messages
         let mut sender_uuids: std::collections::HashSet<String> = std::collections::HashSet::new();
@@ -73,7 +57,15 @@ impl MessageGraphView {
 
         // Process all participants at once
         for uuid in sender_uuids {
-            let name = get_peer_name(&uuid);
+            let name = if uuid == local_peer_uuid {
+                "Me".to_string()
+            } else {
+                if let Some(p) = peers.get(&uuid) {
+                    p.name.clone()
+                } else {
+                    "??".to_string()
+                }
+            };
             self.active_participants.insert(uuid, name);
         }
     }
@@ -190,7 +182,7 @@ impl MessageGraphView {
         ui: &mut egui::Ui,
         messages: &[ChatMessage],
         local_peer: &Peer,
-        other_peers: &Vec<Peer>,
+        other_peers: &HashMap<String, Peer>,
         current_time: DTChatTime,
     ) {
         let make_time_formatter = |show_date: bool, show_time: bool| {

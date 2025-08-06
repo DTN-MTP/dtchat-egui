@@ -3,6 +3,7 @@ use dtchat_backend::dtchat::{ChatModel, Peer};
 use dtchat_backend::Endpoint;
 use eframe::egui;
 use egui::{ComboBox, RichText};
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 pub struct MessageForge {
@@ -33,12 +34,13 @@ impl MessageForge {
     pub fn show(
         &mut self,
         ui: &mut egui::Ui,
-        peers: &[Peer],
+        peers: &HashMap<String, Peer>,
         chat_model: &Arc<Mutex<ChatModel>>,
         pbat_support_by_model: bool,
     ) {
         if self.selected_peer.is_none() && !peers.is_empty() {
-            self.selected_peer = Some(peers[0].clone());
+            let p = peers.iter().next().unwrap().1;
+            self.selected_peer = Some(p.clone());
         }
         if self.selected_endpoint.is_none() {
             self.select_first_endpoint();
@@ -58,10 +60,10 @@ impl MessageForge {
                             .unwrap_or_else(|| "⚠ no peers".to_string()),
                     )
                     .show_ui(ui, |ui| {
-                        for peer in peers {
+                        for (peer_uuid, peer) in peers {
                             if ui
                                 .selectable_label(
-                                    selected_peer.as_ref().map(|p| &p.uuid) == Some(&peer.uuid),
+                                    selected_peer.as_ref().map(|p| &p.uuid) == Some(&peer_uuid),
                                     peer.name.clone(),
                                 )
                                 .clicked()

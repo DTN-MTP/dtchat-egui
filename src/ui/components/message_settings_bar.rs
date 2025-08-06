@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::ui::main::{ProtoFilter, ViewType};
 use crate::utils::text::PrettyStr;
 use dtchat_backend::dtchat::Peer;
@@ -42,7 +44,7 @@ impl MessageSettingsBar {
         max_message_count: &mut usize,
         message_in_db: usize,
         local_peer: &Peer,
-        other_peers: &Vec<Peer>,
+        other_peers: &HashMap<String, Peer>,
     ) {
         ui.add_space(3.0);
         ui.horizontal(|ui| {
@@ -124,7 +126,7 @@ impl MessageSettingsBar {
                         ui.menu_button("Relative", |ui| {
                             let mut clicked = None;
 
-                             for peer in other_peers {
+                             for (peer_uuid, peer) in other_peers {
 
                                 if ui.button(peer.name.as_str()).on_hover_text(format!("Sorted by receiving time for peer {} and sending times for the other peers", peer.name)).clicked() {
                                     clicked = Some(peer.clone());
@@ -132,7 +134,7 @@ impl MessageSettingsBar {
 
                              if let Some(ref peer) = clicked {
                                 *request_sort_strategy = true;
-                                *sort_strategy = SortStrategy::Relative(peer.uuid.clone());
+                                *sort_strategy = SortStrategy::Relative(peer_uuid.clone());
                                 self.last_sort_strategy_peer = Some(peer.clone());
                                 ui.close_menu();
                              }

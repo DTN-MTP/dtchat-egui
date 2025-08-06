@@ -6,7 +6,7 @@ use crate::ui::views::graph::MessageGraphView;
 use crate::ui::views::list::MessageListView;
 use crate::ui::views::settings::SettingsView;
 use crate::utils::text::PrettyStr;
-use dtchat_backend::dtchat::{ChatModel, Peer};
+use dtchat_backend::dtchat::{ChatModel, Peer, Room};
 use dtchat_backend::message::{
     filter_by_network_endpoint, sort_with_strategy, ChatMessage, SortStrategy,
 };
@@ -14,7 +14,7 @@ use dtchat_backend::time::DTChatTime;
 use dtchat_backend::EndpointProto;
 use eframe::egui;
 use egui::{CentralPanel, TopBottomPanel, Ui};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
 
 #[derive(PartialEq, Clone, Copy)]
@@ -93,11 +93,12 @@ pub struct UIState {
     app_events: VecDeque<DisplayEvent>,
     network_events: VecDeque<DisplayEvent>,
     local_peer: Peer,
-    other_peers: Vec<Peer>,
+    other_peers: HashMap<String, Peer>,
+    _rooms: HashMap<String, Room>,
 }
 
 impl UIState {
-    pub fn new(local_peer: Peer, other_peers: Vec<Peer>) -> Self {
+    pub fn new(local: Peer, other_peers: HashMap<String, Peer>, rooms:  HashMap<String, Room>) -> Self {
         Self {
             message_forge: MessageForge::new(),
             message_settings_bar: MessageSettingsBar::new(),
@@ -113,10 +114,12 @@ impl UIState {
             messages: vec![],
             app_events: VecDeque::new(),
             network_events: VecDeque::new(),
-            local_peer,
+            local_peer: local,
             other_peers,
+            _rooms: rooms,
             pbat_support_by_model: false,
         }
+
     }
 
     pub fn will_lock_model_to_refresh(
@@ -126,7 +129,7 @@ impl UIState {
         network_events: VecDeque<DisplayEvent>,
     ) {
         let sticky = self.messages.len() == self.max_message_count;
-
+        self.other_peers = chat_model.lock().unwrap().get_other_peers();
         self.messages = chat_model.lock().unwrap().get_all_messages();
         self.pbat_support_by_model = chat_model.lock().unwrap().is_pbat_enabled();
         self.request_protocol_filter = true;
