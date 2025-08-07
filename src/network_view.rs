@@ -2,7 +2,7 @@ use crate::{app::DisplayEvent, utils::text::PrettyStr};
 use eframe::egui::{self, ScrollArea};
 use std::collections::VecDeque;
 
-pub struct SettingsView;
+pub struct NetworkView;
 
 fn show_events_in_columns(ui: &mut egui::Ui, heading: &str, app_events: &VecDeque<DisplayEvent>) {
     ui.push_id(format!("{}_section", heading), |ui| {
@@ -32,11 +32,7 @@ fn show_events_in_columns(ui: &mut egui::Ui, heading: &str, app_events: &VecDequ
     });
 }
 
-impl SettingsView {
-    pub fn new() -> Self {
-        Self
-    }
-
+impl NetworkView {
     pub fn show(
         &mut self,
         ui: &mut egui::Ui,

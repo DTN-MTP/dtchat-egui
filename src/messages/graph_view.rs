@@ -183,7 +183,7 @@ impl MessageGraphView {
         messages: &[ChatMessage],
         local_peer: &Peer,
         other_peers: &HashMap<String, Peer>,
-        current_time: DTChatTime,
+        current_time: &DTChatTime,
     ) {
         let make_time_formatter = |show_date: bool, show_time: bool| {
             move |x: GridMark, _range: &RangeInclusive<f64>| {

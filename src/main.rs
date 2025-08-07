@@ -2,8 +2,10 @@ use std::error::Error;
 use std::sync::{Arc, Mutex};
 
 mod app;
-mod ui;
-#[macro_use]
+mod header_view;
+mod main_view;
+mod messages;
+mod network_view;
 mod utils;
 
 use app::DTChatApp;

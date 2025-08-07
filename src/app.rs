@@ -1,4 +1,4 @@
-use crate::ui::main::UIState;
+use crate::main_view::MainView;
 use crate::utils::text::PrettyStr;
 use crate::utils::uuid::safe_id_display;
 use dtchat_backend::dtchat::ChatModel;
@@ -297,7 +297,7 @@ impl AppEventObserver for EventHandler {
 pub struct DTChatApp {
     pub event_handler: Arc<Mutex<EventHandler>>,
     pub chat_model: Arc<Mutex<ChatModel>>,
-    pub ui: UIState,
+    pub ui: MainView,
     // TODO: those 2 must be retrieve from the model
     context_initialized: bool,
 }
@@ -305,12 +305,12 @@ pub struct DTChatApp {
 impl DTChatApp {
     pub fn new(chat_model: Arc<Mutex<ChatModel>>, event_handler: Arc<Mutex<EventHandler>>) -> Self {
         let local = chat_model.lock().unwrap().get_localpeer();
-        let peers = chat_model.lock().unwrap().get_other_peers();
-        let rooms = chat_model.lock().unwrap().get_rooms();
+        let ui = MainView::new(local);
+
         Self {
             event_handler,
             chat_model,
-            ui: UIState::new(local, peers, rooms),
+            ui,
             context_initialized: false,
         }
     }

@@ -6,14 +6,14 @@ use egui::{ComboBox, RichText};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-pub struct MessageForge {
+pub struct MessagePromptView {
     pub input_text: String,
     pub selected_peer: Option<Peer>,
     pub selected_endpoint: Option<Endpoint>,
     pub pbat_enabled: bool,
 }
 
-impl MessageForge {
+impl MessagePromptView {
     pub fn new() -> Self {
         Self {
             input_text: String::new(),

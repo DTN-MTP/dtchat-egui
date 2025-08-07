@@ -2,11 +2,11 @@ use dtchat_backend::{dtchat::Peer, time::DTChatTime};
 
 use crate::utils::{clock::Clock, text::PrettyStr};
 
-pub struct Header {
+pub struct HeaderView {
     clock: Clock,
 }
 
-impl Header {
+impl HeaderView {
     pub fn new() -> Self {
         Self {
             clock: Clock::new(&DTChatTime::now(), false),

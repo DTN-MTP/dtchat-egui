@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
-use crate::ui::main::{ProtoFilter, ViewType};
+use crate::messages::{MessageViewType, ProtoFilter};
 use crate::utils::text::PrettyStr;
 use dtchat_backend::dtchat::{Peer, Room};
 use dtchat_backend::message::SortStrategy;
 use dtchat_backend::EndpointProto;
 use egui::{ComboBox, Slider, Ui};
 
-pub struct MessageSettingsBar {
+pub struct MessageSettingsView {
     last_sort_strategy_peer: Option<Peer>,
 }
 
@@ -24,7 +24,7 @@ fn get_str_for_strat(local_peer_uuid: String, peer: Option<Peer>, strat: &SortSt
     }
 }
 
-impl MessageSettingsBar {
+impl MessageSettingsView {
     pub fn new() -> Self {
         Self {
             last_sort_strategy_peer: None,
@@ -34,7 +34,7 @@ impl MessageSettingsBar {
     pub fn show(
         &mut self,
         ui: &mut Ui,
-        current_view: &mut ViewType,
+        current_view: &mut MessageViewType,
         // request_sort_with_strategy: &mut Option<SortStrategy>,
         // request_protocol_filter: &mut Option<ProtoFilter>,
         sort_strategy: &mut SortStrategy,
@@ -45,37 +45,56 @@ impl MessageSettingsBar {
         message_in_db: usize,
         local_peer: &Peer,
         other_peers: &HashMap<String, Peer>,
-        _rooms: &HashMap<String, Room>,
-        _selected_room: &mut Option<Room>,
+        rooms: &HashMap<String, Room>,
+        selected_room: &mut Option<Room>,
     ) {
         ui.add_space(3.0);
+
+        //   ui.vertical(|ui| {
         ui.horizontal(|ui| {
-            ui.label("View:");
-            ComboBox::from_id_salt("view_selector")
-                .selected_text(current_view.name())
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(
-                        current_view,
-                        ViewType::MessageGraph,
-                        ViewType::MessageGraph.name(),
-                    );
-                    ui.selectable_value(
-                        current_view,
-                        ViewType::MessageList,
-                        ViewType::MessageList.name(),
-                    );
-                    ui.selectable_value(
-                        current_view,
-                        ViewType::Network,
-                        ViewType::Network.name(),
-                    );
+                ui.label("View:");
+                ComboBox::from_id_salt("view_selector")
+                    .selected_text(current_view.name())
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(
+                            current_view,
+                            MessageViewType::MessageGraph,
+                            MessageViewType::MessageGraph.name(),
+                        );
+                        ui.selectable_value(
+                            current_view,
+                            MessageViewType::MessageList,
+                            MessageViewType::MessageList.name(),
+                        );
                 });
 
-            if *current_view != ViewType::Network {
                 ui.separator();
 
+
+                ui.label("Room:");
+                egui::ComboBox::from_id_salt("Select Room")
+                    .selected_text(match selected_room {  // Remove & since selected_room is already &mut
+                        Some(room) => &room.name,
+                        None => "All Messages",
+                    })
+                    .show_ui(ui, |ui| {
+                        // "All Messages" option (None)
+                        ui.selectable_value(selected_room, None, "All Messages");
+
+                        // Individual room options
+                        for (_room_uuid, room) in rooms {
+                            ui.selectable_value(
+                                selected_room,
+                                Some(room.clone()),
+                                &room.name,
+                            );
+                        }
+                });
+
+
+                ui.separator();
                 let previous_filter = protocol_filter.clone();
-                ui.label("Filter:");
+                ui.label("Show:");
                 ComboBox::from_id_salt("protocol_filter")
                     .selected_text(
                         protocol_filter.to_pretty_str(),
@@ -101,7 +120,7 @@ impl MessageSettingsBar {
                             opt.clone(),
                             opt.to_pretty_str(),
                         );
-                    });
+                });
 
                 // Trigger on selection change
                 if previous_filter != *protocol_filter {
@@ -110,29 +129,7 @@ impl MessageSettingsBar {
 
                 ui.separator();
 
-
-            // ui.label("Room:");
-            // egui::ComboBox::from_id_salt("Select Room")
-            //     .selected_text(match selected_room {  // Remove & since selected_room is already &mut
-            //         Some(room) => &room.name,
-            //         None => "All Messages",
-            //     })
-            //     .show_ui(ui, |ui| {
-            //         // "All Messages" option (None)
-            //         ui.selectable_value(selected_room, None, "All Messages");
-
-            //         // Individual room options
-            //         for (_room_uuid, room) in rooms {
-            //             ui.selectable_value(
-            //                 selected_room,
-            //                 Some(room.clone()),
-            //                 &room.name,
-            //             );
-            //         }
-            //     });
-            // ui.separator();
-
-                ui.label("Sorting:");
+                ui.label("Sort by:");
                 ui.menu_button(get_str_for_strat(local_peer.uuid.clone(), self.last_sort_strategy_peer.clone(), sort_strategy), |ui| {
                     if ui.button("Standard").on_hover_text("Sorted by sending times").clicked() {
 
@@ -166,35 +163,38 @@ impl MessageSettingsBar {
 
                     });
                 });
-                let enable_slider= message_in_db > 0;
 
                 ui.separator();
+
+                let enable_slider = message_in_db > 0;
+
                 // TODO, use this before using other sliders
                 ui.style_mut().spacing.slider_width = 60.0;
-                ui.add_enabled(
-                enable_slider,
-                {
+                ui.add_enabled(enable_slider, {
                     let displayed = *max_message_count;
                     let str_display = if message_in_db == 0 {
-                        String::from("No messages in the DB")
+                        String::from("No messages")
                     } else if *max_message_count == message_in_db {
-                        String::from("Showing all messages")
+                        String::from("All messages")
                     } else if *max_message_count == 0 {
-                        String::from("Showing no messages")
+                        String::from("Hide all")
                     } else {
-                        format!("Showing the last {} messages", displayed)
+                        if displayed == 1 {
+                            format!("Last message")
+                        } else {
+                            format!("Last {} messages", displayed)
+                        }
                     };
 
-                    Slider::new( max_message_count, message_in_db..=0).text(str_display)
-                }
-            );
-            }
-        });
+                    Slider::new(max_message_count, message_in_db..=0).text(str_display)
+                });
+
+            });
         ui.add_space(3.0);
     }
 }
 
-impl Default for MessageSettingsBar {
+impl Default for MessageSettingsView {
     fn default() -> Self {
         Self::new()
     }
