@@ -88,11 +88,15 @@ impl EventHandler {
             self.app_events.pop_front();
         }
     }
-    pub fn network_events(&self) -> VecDeque<DisplayEvent> {
-        self.network_events.clone()
+    pub fn consume_network_events(&mut self) -> VecDeque<DisplayEvent> {
+        let res = self.network_events.clone();
+        self.network_events.clear();
+        res
     }
-    pub fn app_events(&self) -> VecDeque<DisplayEvent> {
-        self.app_events.clone()
+    pub fn consume_app_events(&mut self) -> VecDeque<DisplayEvent> {
+        let res = self.app_events.clone();
+        self.app_events.clear();
+        res
     }
 
     pub fn handle_chat_app_event(&mut self, app_event: ChatAppEvent) {
@@ -333,7 +337,10 @@ impl App for DTChatApp {
         if let Ok(mut handler) = self.event_handler.lock() {
             if handler.refresh_model_request {
                 handler.refresh_model_request = false;
-                update_request_with_events = Some((handler.app_events(), handler.network_events()));
+                update_request_with_events = Some((
+                    handler.consume_app_events(),
+                    handler.consume_network_events(),
+                ));
             }
         }
         if let Some((app_events, net_events)) = update_request_with_events {

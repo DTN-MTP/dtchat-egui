@@ -73,8 +73,8 @@ impl MainView {
             self.message_view.max_message_count = self.data.messages.len()
         }
 
-        self.data.app_events = app_events;
-        self.data.network_events = network_events;
+        self.data.app_events.extend(app_events);
+        self.data.network_events.extend(network_events);
 
         // Delegate sorting
         self.message_view.request_protocol_filter = true;

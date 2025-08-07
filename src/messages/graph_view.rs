@@ -235,7 +235,7 @@ impl MessageGraphView {
                 first_message = from;
             }
             if to > last_message {
-                last_message = from;
+                last_message = to;
             }
 
             boxes_by_participant
