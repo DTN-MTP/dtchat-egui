@@ -39,7 +39,7 @@ impl MessageListView {
             .stick_to_bottom(true)
             .show(ui, |ui| {
                 if messages.is_empty() {
-                    ui.colored_label(egui::Color32::GRAY, "Empty chat");
+                    ui.colored_label(egui::Color32::GRAY, "No messages");
                 } else {
                     for message in messages.iter() {
                         self.render(ui, message, local_peer, other_peers, self.clock.to_string());

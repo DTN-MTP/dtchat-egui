@@ -102,14 +102,17 @@ impl MainView {
 
         match self.current_view {
             ViewType::Messages => {
-                // Although part of the message_view, we do not want to be access to the model
+                // Although part of the message_view, we do not want to give access to the model
+                // So we show it from here..
                 TopBottomPanel::bottom("message_forge_panel").show_inside(ui, |ui| {
                     self.message_view.message_prompt_view.show(
                         ui,
                         &self.data.other_peers,
                         chat_model,
                         self.data.pbat_support_by_model,
+                        // ..as if it was in the messages mod
                         &self.message_view.current_room,
+                        &mut self.message_view.current_peer,
                     );
                 });
 

@@ -28,7 +28,16 @@ peer_list:
 
 room_list:
   - uuid: 1
-    name: Default
+    name: "Mission 1"
+    participants:
+      - peer_uuid: "1"
+        endpoint: "tcp 127.0.0.1:6500"
+      - peer_uuid: "2"
+        endpoint: "udp 127.0.0.1:7550"
+      - peer_uuid: "3"
+        endpoint: "tcp 127.0.0.1:8000"
+  - uuid: 2
+    name: "Mission 2"
     participants:
       - peer_uuid: "1"
         endpoint: "tcp 127.0.0.1:6500"

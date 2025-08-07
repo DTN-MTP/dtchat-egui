@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::messages::{MessageViewType, ProtoFilter};
 use crate::utils::text::PrettyStr;
-use dtchat_backend::dtchat::{Peer, Room};
+use dtchat_backend::dtchat::Peer;
 use dtchat_backend::message::SortStrategy;
 use dtchat_backend::EndpointProto;
 use egui::{ComboBox, Slider, Ui};
@@ -11,14 +11,14 @@ pub struct MessageSettingsView {
     last_sort_strategy_peer: Option<Peer>,
 }
 
-fn get_str_for_strat(local_peer_uuid: String, peer: Option<Peer>, strat: &SortStrategy) -> String {
+fn get_str_for_strat(local_peer_uuid: String, _peer: Option<Peer>, strat: &SortStrategy) -> String {
     match strat {
         SortStrategy::Standard => "Standard".to_string(),
         SortStrategy::Relative(sort_for_uuid) => {
             if local_peer_uuid == *sort_for_uuid {
                 "Local".to_string()
             } else {
-                format!("Relative ({})", peer.unwrap().name)
+                format!("Relative")
             }
         }
     }
@@ -45,8 +45,6 @@ impl MessageSettingsView {
         message_in_db: usize,
         local_peer: &Peer,
         other_peers: &HashMap<String, Peer>,
-        rooms: &HashMap<String, Room>,
-        selected_room: &mut Option<Room>,
     ) {
         ui.add_space(3.0);
 
@@ -67,30 +65,6 @@ impl MessageSettingsView {
                             MessageViewType::MessageList.name(),
                         );
                 });
-
-                ui.separator();
-
-
-                ui.label("Room:");
-                egui::ComboBox::from_id_salt("Select Room")
-                    .selected_text(match selected_room {  // Remove & since selected_room is already &mut
-                        Some(room) => &room.name,
-                        None => "All Messages",
-                    })
-                    .show_ui(ui, |ui| {
-                        // "All Messages" option (None)
-                        ui.selectable_value(selected_room, None, "All Messages");
-
-                        // Individual room options
-                        for (_room_uuid, room) in rooms {
-                            ui.selectable_value(
-                                selected_room,
-                                Some(room.clone()),
-                                &room.name,
-                            );
-                        }
-                });
-
 
                 ui.separator();
                 let previous_filter = protocol_filter.clone();
