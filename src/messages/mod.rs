@@ -66,6 +66,8 @@ pub struct MessageView {
     pub max_message_count: usize,
     pub sort_strategy: SortStrategy,
     pub protocol_filter: ProtoFilter,
+
+    // defines the view
     pub current_room: Option<Room>,
 
     // views

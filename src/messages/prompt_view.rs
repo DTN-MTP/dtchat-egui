@@ -1,5 +1,5 @@
 use crate::utils::text::PrettyStr;
-use dtchat_backend::dtchat::{ChatModel, Peer};
+use dtchat_backend::dtchat::{ChatModel, Peer, Room};
 use dtchat_backend::Endpoint;
 use eframe::egui;
 use egui::{ComboBox, RichText};
@@ -37,6 +37,7 @@ impl MessagePromptView {
         peers: &HashMap<String, Peer>,
         chat_model: &Arc<Mutex<ChatModel>>,
         pbat_support_by_model: bool,
+        current_room: &Option<Room>,
     ) {
         if self.selected_peer.is_none() && !peers.is_empty() {
             let p = peers.iter().next().unwrap().1;
@@ -129,13 +130,21 @@ impl MessagePromptView {
                     if !content.is_empty() {
                         if let Some(endpoint) = self.selected_endpoint.clone() {
                             if let Ok(mut model) = chat_model.lock() {
-                                model.send_to_peer(
-                                    &content.to_string(),
-                                    &"Default".to_string(), // TODO
-                                    peer.uuid.clone(),
-                                    &endpoint,
-                                    self.pbat_enabled,
-                                );
+                                if let Some(room) = current_room {
+                                    model.send_to_room(
+                                        &content.to_string(),
+                                        &room.uuid,
+                                        self.pbat_enabled,
+                                    );
+                                } else {
+                                    model.send_to_peer(
+                                        &content.to_string(),
+                                        &"".to_string(),
+                                        peer.uuid.clone(),
+                                        &endpoint,
+                                        self.pbat_enabled,
+                                    );
+                                }
                                 self.input_text.clear();
                             }
                         }

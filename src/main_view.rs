@@ -109,6 +109,7 @@ impl MainView {
                         &self.data.other_peers,
                         chat_model,
                         self.data.pbat_support_by_model,
+                        &self.message_view.current_room,
                     );
                 });
 
