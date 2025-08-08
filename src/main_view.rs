@@ -77,8 +77,7 @@ impl MainView {
         self.data.network_events.extend(network_events);
 
         // Delegate sorting
-        self.message_view.request_protocol_filter = true;
-        self.message_view.request_sort_strategy = true;
+        self.message_view.request_filter = true;
     }
 
     pub fn show(&mut self, ui: &mut Ui, chat_model: &Arc<Mutex<ChatModel>>) {

@@ -53,16 +53,13 @@ impl MessageSettingsView {
         &mut self,
         ui: &mut Ui,
         current_view: &mut MessageViewType,
-        // request_sort_with_strategy: &mut Option<SortStrategy>,
-        // request_protocol_filter: &mut Option<ProtoFilter>,
         sort_strategy: &mut SortStrategy,
-        request_sort_strategy: &mut bool,
         protocol_filter: &mut ProtoFilter,
-        request_protocol_filter: &mut bool,
         max_message_count: &mut usize,
         message_in_db: usize,
         local_peer: &Peer,
         other_peers: &HashMap<String, Peer>,
+        request_filter: &mut bool,
     ) {
         ui.add_space(3.0);
 
@@ -116,7 +113,7 @@ impl MessageSettingsView {
 
                 // Trigger on selection change
                 if previous_filter != *protocol_filter {
-                    *request_protocol_filter = true;
+                    *request_filter = true;
                 }
 
                 ui.separator();
@@ -138,7 +135,7 @@ impl MessageSettingsView {
                                         .on_hover_text("Sorted by sending times")
                                         .clicked()
                                     {
-                                        *request_sort_strategy = true;
+                                        *request_filter = true;
                                         self.last_sort_strategy_peer = None;
                                         ui.close_menu();
                                     }
@@ -152,7 +149,7 @@ impl MessageSettingsView {
                                         .on_hover_text("Sorted by receiving time for the local peer and sending times for the other peers")
                                         .clicked()
                                     {
-                                        *request_sort_strategy = true;
+                                        *request_filter = true;
                                         self.last_sort_strategy_peer = Some(local_peer.clone());
                                         ui.close_menu();
                                     }
@@ -167,7 +164,7 @@ impl MessageSettingsView {
                                                 ))
                                                 .clicked()
                                             {
-                                                *request_sort_strategy = true;
+                                                *request_filter = true;
                                                 self.last_sort_strategy_peer = Some(peer.clone());
                                                 ui.close_menu();
                                             }

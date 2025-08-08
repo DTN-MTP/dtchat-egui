@@ -30,6 +30,7 @@ impl SideSelectionView {
         rooms: &HashMap<String, Room>,
         selected_room: &mut Option<Room>,
         selected_peer: &mut Option<Peer>,
+        request_room_filter: &mut bool,
     ) {
         ui.horizontal(|ui| {
             if ui
@@ -38,6 +39,7 @@ impl SideSelectionView {
             {
                 *selected_room = None;
                 *selected_peer = self.last_peer.clone();
+                *request_room_filter = true;
             };
             ui.separator();
             if ui
@@ -46,6 +48,7 @@ impl SideSelectionView {
             {
                 *selected_peer = None;
                 *selected_room = self.last_room.clone();
+                *request_room_filter = true;
             };
         });
         ui.separator();
@@ -63,7 +66,8 @@ impl SideSelectionView {
                             )
                             .clicked()
                         {
-                            self.last_peer = Some(peer.clone())
+                            self.last_peer = Some(peer.clone());
+                            *request_room_filter = true;
                         };
                     }
                 }
@@ -81,7 +85,8 @@ impl SideSelectionView {
                             )
                             .clicked()
                         {
-                            self.last_room = Some(room.clone())
+                            self.last_room = Some(room.clone());
+                            *request_room_filter = true;
                         };
                     }
                 }

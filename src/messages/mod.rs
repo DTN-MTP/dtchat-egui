@@ -61,8 +61,7 @@ impl std::fmt::Display for ProtoFilter {
 }
 
 pub struct MessageView {
-    pub request_sort_strategy: bool,
-    pub request_protocol_filter: bool,
+    pub request_filter: bool,
 
     pub max_message_count: usize,
     pub sort_strategy: SortStrategy,
@@ -91,10 +90,9 @@ impl MessageView {
             message_prompt_view: MessagePromptView::new(),
             message_settings_view: MessageSettingsView::new(),
             current_view: MessageViewType::MessageGraph,
-            request_sort_strategy: true,
+            request_filter: true,
             max_message_count: 0,
             sort_strategy: SortStrategy::Standard,
-            request_protocol_filter: true,
             protocol_filter: ProtoFilter::NoFilter,
             current_room: None,
             current_peer: None,
@@ -106,18 +104,37 @@ impl MessageView {
     }
 
     fn manage_message(&mut self, data: &MirroredData) -> usize {
-        if self.request_protocol_filter {
-            self.messages_to_display = match &self.protocol_filter {
-                ProtoFilter::NoFilter => data.messages.clone(),
-                ProtoFilter::Filter(by_proto) => {
-                    filter_by_network_endpoint(&data.messages, by_proto.clone())
-                }
-            };
-            self.request_protocol_filter = false;
-        }
-        if self.request_sort_strategy {
+        if self.request_filter {
+            self.messages_to_display = data
+                .messages
+                .iter()
+                .filter(|msg| {
+                    let mut retain = true;
+
+                    match &self.protocol_filter {
+                        ProtoFilter::NoFilter => (),
+                        ProtoFilter::Filter(endpoint_proto) => {
+                            if msg.source_endpoint.proto != *endpoint_proto {
+                                retain = false;
+                            }
+                        }
+                    }
+
+                    if let Some(room) = &self.current_room {
+                        if msg.room_uuid != room.uuid {
+                            retain = false;
+                        }
+                    }
+
+                    retain
+                })
+                .cloned()
+                .collect();
+
             sort_with_strategy(&mut self.messages_to_display, self.sort_strategy.clone());
-            self.request_sort_strategy = false;
+
+            // Should be safe as long as those flags are not supposed to be raised asynchronously
+            self.request_filter = false;
         }
 
         self.messages_to_display
@@ -139,6 +156,7 @@ impl MessageView {
                     &data.rooms,
                     &mut self.current_room,
                     &mut self.current_peer,
+                    &mut self.request_filter,
                 )
             });
 
@@ -149,13 +167,12 @@ impl MessageView {
                     ui,
                     &mut self.current_view,
                     &mut self.sort_strategy,
-                    &mut self.request_sort_strategy,
                     &mut self.protocol_filter,
-                    &mut self.request_protocol_filter,
                     &mut self.max_message_count,
-                    data.messages.len(),
+                    self.messages_to_display.len(),
                     &data.local_peer,
                     &data.other_peers,
+                    &mut self.request_filter,
                 );
             });
             match self.current_view {
