@@ -81,7 +81,7 @@ pub struct MessageView {
     pub current_view: MessageViewType,
 
     // messages:
-    messages_to_display: Vec<ChatMessage>,
+    pub messages_to_display: Vec<ChatMessage>,
 }
 
 impl MessageView {
@@ -103,47 +103,48 @@ impl MessageView {
         }
     }
 
-    fn manage_message(&mut self, data: &MirroredData) -> usize {
-        if self.request_filter {
-            self.messages_to_display = data
-                .messages
-                .iter()
-                .filter(|msg| {
-                    let mut retain = true;
+    pub fn manage_message(&mut self, data: &MirroredData) {
+        self.messages_to_display = data
+            .messages
+            .iter()
+            .filter(|msg| {
+                let mut retain = true;
 
-                    match &self.protocol_filter {
-                        ProtoFilter::NoFilter => (),
-                        ProtoFilter::Filter(endpoint_proto) => {
-                            if msg.source_endpoint.proto != *endpoint_proto {
-                                retain = false;
-                            }
-                        }
-                    }
-
-                    if let Some(room) = &self.current_room {
-                        if msg.room_uuid != room.uuid {
+                match &self.protocol_filter {
+                    ProtoFilter::NoFilter => (),
+                    ProtoFilter::Filter(endpoint_proto) => {
+                        if msg.source_endpoint.proto != *endpoint_proto {
                             retain = false;
                         }
                     }
+                }
 
-                    retain
-                })
-                .cloned()
-                .collect();
+                if let Some(room) = &self.current_room {
+                    if msg.room_uuid != room.uuid {
+                        retain = false;
+                    }
+                }
 
-            sort_with_strategy(&mut self.messages_to_display, self.sort_strategy.clone());
+                retain
+            })
+            .cloned()
+            .collect();
 
-            // Should be safe as long as those flags are not supposed to be raised asynchronously
-            self.request_filter = false;
-        }
+        sort_with_strategy(&mut self.messages_to_display, self.sort_strategy.clone());
 
-        self.messages_to_display
-            .len()
-            .saturating_sub(self.max_message_count)
+        // Should be safe as long as those flags are not supposed to be raised asynchronously
     }
 
     pub fn show(&mut self, data: &MirroredData, current_time: &DTChatTime, ui: &mut Ui) {
-        let start_idx: usize = self.manage_message(data);
+        if self.request_filter {
+            self.manage_message(data);
+            self.request_filter = false;
+        }
+
+        let start_idx: usize = self
+            .messages_to_display
+            .len()
+            .saturating_sub(self.max_message_count);
 
         egui::SidePanel::right("right_panel")
             .resizable(true)

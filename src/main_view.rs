@@ -64,20 +64,22 @@ impl MainView {
         app_events: VecDeque<DisplayEvent>,
         network_events: VecDeque<DisplayEvent>,
     ) {
-        let sticky = self.data.messages.len() == self.message_view.max_message_count;
+        let sticky =
+            self.message_view.messages_to_display.len() == self.message_view.max_message_count;
+
         self.data.other_peers = chat_model.lock().unwrap().get_other_peers();
         self.data.messages = chat_model.lock().unwrap().get_all_messages();
         self.data.pbat_support_by_model = chat_model.lock().unwrap().is_pbat_enabled();
         self.data.rooms = chat_model.lock().unwrap().get_rooms();
+
+        self.message_view.manage_message(&self.data);
+
         if sticky {
-            self.message_view.max_message_count = self.data.messages.len()
+            self.message_view.max_message_count = self.message_view.messages_to_display.len()
         }
 
         self.data.app_events.extend(app_events);
         self.data.network_events.extend(network_events);
-
-        // Delegate sorting
-        self.message_view.request_filter = true;
     }
 
     pub fn show(&mut self, ui: &mut Ui, chat_model: &Arc<Mutex<ChatModel>>) {
