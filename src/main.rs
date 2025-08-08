@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     model_arc.lock().unwrap().start(network_engine);
 
     let options = NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([850.0, 600.0]), // width, height
+        viewport: egui::ViewportBuilder::default().with_inner_size([900.0, 600.0]), // width, height
         ..Default::default()
     };
     eframe::run_native(

@@ -5,7 +5,7 @@ use crate::utils::text::PrettyStr;
 use dtchat_backend::dtchat::Peer;
 use dtchat_backend::message::SortStrategy;
 use dtchat_backend::EndpointProto;
-use egui::{ComboBox, Layout, Slider, Ui};
+use egui::{ComboBox, Slider, Ui};
 
 pub struct MessageSettingsView {
     last_sort_strategy_peer: Option<Peer>,
@@ -22,6 +22,24 @@ fn get_str_for_strat(local_peer_uuid: String, _peer: Option<Peer>, strat: &SortS
             }
         }
     }
+}
+
+fn paint_dropdown_arrow(
+    painter: &egui::Painter,
+    rect: egui::Rect,
+    visuals: &egui::style::WidgetVisuals,
+) {
+    // Exact logic from egui's paint_default_icon
+    let rect = egui::Rect::from_center_size(
+        rect.center(),
+        egui::vec2(rect.width() * 0.7, rect.height() * 0.45),
+    );
+
+    painter.add(egui::Shape::convex_polygon(
+        vec![rect.left_top(), rect.right_top(), rect.center_bottom()],
+        visuals.fg_stroke.color,
+        egui::Stroke::NONE,
+    ));
 }
 
 impl MessageSettingsView {
@@ -103,51 +121,74 @@ impl MessageSettingsView {
 
                 ui.separator();
 
+
+
                 ui.label("Sort by:");
-                ui.add_sized(egui::Vec2::new(100.0, ui.spacing().interact_size.y),|ui: &mut egui::Ui| {
-                    ui.with_layout(Layout::top_down_justified(egui::Align::LEFT) , |ui| {
-                        ui.menu_button(get_str_for_strat(local_peer.uuid.clone(), self.last_sort_strategy_peer.clone(), sort_strategy), |ui| {
-                             ui.add_sized(egui::Vec2::new(100.0, ui.spacing().interact_size.y),|ui: &mut egui::Ui| {
-                                ui.with_layout(Layout::top_down_justified(egui::Align::LEFT) , |ui| {
-                                    if ui.selectable_value(
-                                        sort_strategy,
-                                        SortStrategy::Standard,
-                                    "Standard").on_hover_text("Sorted by sending times").clicked() {
+                // TODO: maybe make this a separate widget if we need again this kind of combobox workaround
+                ui.add_sized(egui::Vec2::new(100.0, ui.spacing().interact_size.y), |ui: &mut egui::Ui| {
+                    ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                        let button_text = get_str_for_strat(local_peer.uuid.clone(), self.last_sort_strategy_peer.clone(), sort_strategy);
+
+                        // Outer menu button
+                        let response = ui.menu_button(button_text, |ui| {
+                            ui.add_sized(egui::Vec2::new(100.0, ui.spacing().interact_size.y), |ui: &mut egui::Ui| {
+                                ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                                    if ui
+                                        .selectable_value(sort_strategy, SortStrategy::Standard, "Standard")
+                                        .on_hover_text("Sorted by sending times")
+                                        .clicked()
+                                    {
                                         *request_sort_strategy = true;
                                         self.last_sort_strategy_peer = None;
                                         ui.close_menu();
-                                    };
-                                    if ui.selectable_value(
-                                        sort_strategy,
-                                        SortStrategy::Relative(local_peer.uuid.clone()),
-                                    "Local").on_hover_text("Sorted by receiving time for the local peer and sending times for the other peers").clicked() {
+                                    }
 
+                                    if ui
+                                        .selectable_value(
+                                            sort_strategy,
+                                            SortStrategy::Relative(local_peer.uuid.clone()),
+                                            "Local",
+                                        )
+                                        .on_hover_text("Sorted by receiving time for the local peer and sending times for the other peers")
+                                        .clicked()
+                                    {
                                         *request_sort_strategy = true;
                                         self.last_sort_strategy_peer = Some(local_peer.clone());
                                         ui.close_menu();
-                                    };
+                                    }
 
                                     ui.menu_button("Relative", |ui| {
-                                            for (peer_uuid, peer) in other_peers {
-
-                                                if ui.selectable_value(
-                                                    sort_strategy,
-                                                    SortStrategy::Relative(peer_uuid.clone()),
-                                                &peer.name).on_hover_text(format!("Sorted by receiving time for peer {} and sending times for the other peers", peer.name)).clicked() {
-
-                                                    *request_sort_strategy = true;
-                                                    self.last_sort_strategy_peer = Some(peer.clone());
-                                                    ui.close_menu();
-                                                };
-
+                                        for (peer_uuid, peer) in other_peers {
+                                            if ui
+                                                .selectable_value(sort_strategy, SortStrategy::Relative(peer_uuid.clone()), &peer.name)
+                                                .on_hover_text(format!(
+                                                    "Sorted by receiving time for peer {} and sending times for the other peers",
+                                                    peer.name
+                                                ))
+                                                .clicked()
+                                            {
+                                                *request_sort_strategy = true;
+                                                self.last_sort_strategy_peer = Some(peer.clone());
+                                                ui.close_menu();
+                                            }
                                         }
                                     });
                                 }).response
                             });
                         });
-                    }).response
-                });
 
+                        // --- Draw arrow like ComboBox ---
+                        let icon_size = egui::Vec2::splat(ui.spacing().icon_width);
+
+                        // Shrink to account for right-side button padding
+                        let padded_rect = response.response.rect.shrink2(egui::vec2(ui.spacing().button_padding.x, 0.0));
+
+                        let icon_rect = egui::Align2::RIGHT_CENTER.align_size_within_rect(icon_size, padded_rect);
+                        let visuals = ui.style().interact(&response.response);
+                        paint_dropdown_arrow(&ui.painter(), icon_rect.expand(visuals.expansion), &visuals);
+                    })
+                    .response
+                });
 
 
                 ui.separator();
