@@ -108,12 +108,10 @@ impl MainView {
                 TopBottomPanel::bottom("message_forge_panel").show_inside(ui, |ui| {
                     self.message_view.message_prompt_view.show(
                         ui,
-                        &self.data.other_peers,
                         chat_model,
                         self.data.pbat_support_by_model,
                         // ..as if it was in the messages mod
-                        &self.message_view.current_room,
-                        &mut self.message_view.current_peer,
+                        &self.message_view.current_mode,
                     );
                 });
 

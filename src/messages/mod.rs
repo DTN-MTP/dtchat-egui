@@ -1,6 +1,6 @@
 use dtchat_backend::{
     dtchat::{Peer, Room},
-    message::{filter_by_network_endpoint, sort_with_strategy, ChatMessage, SortStrategy},
+    message::{sort_with_strategy, ChatMessage, SortStrategy},
     time::DTChatTime,
     EndpointProto,
 };
@@ -36,6 +36,12 @@ impl MessageViewType {
     }
 }
 
+#[derive(PartialEq)]
+pub enum MessagingMode {
+    Peer(Option<Peer>),
+    Room(Option<Room>),
+}
+
 #[derive(Clone, PartialEq, Eq)]
 pub enum ProtoFilter {
     NoFilter,
@@ -68,8 +74,8 @@ pub struct MessageView {
     pub protocol_filter: ProtoFilter,
 
     // defines the view
-    pub current_room: Option<Room>,
-    pub current_peer: Option<Peer>,
+    pub current_mode: MessagingMode,
+
     // views
     pub message_prompt_view: MessagePromptView,
     pub message_settings_view: MessageSettingsView,
@@ -90,12 +96,11 @@ impl MessageView {
             message_prompt_view: MessagePromptView::new(),
             message_settings_view: MessageSettingsView::new(),
             current_view: MessageViewType::MessageGraph,
-            request_filter: true,
+            request_filter: false,
             max_message_count: 0,
             sort_strategy: SortStrategy::Standard,
             protocol_filter: ProtoFilter::NoFilter,
-            current_room: None,
-            current_peer: None,
+            current_mode: MessagingMode::Peer(None),
             message_list_view: MessageListView::new(),
             message_graph_view: MessageGraphView::new(),
             room_selection_view: SideSelectionView::new(),
@@ -119,7 +124,7 @@ impl MessageView {
                     }
                 }
 
-                if let Some(room) = &self.current_room {
+                if let MessagingMode::Room(Some(room)) = &self.current_mode {
                     if msg.room_uuid != room.uuid {
                         retain = false;
                     }
@@ -155,8 +160,7 @@ impl MessageView {
                     ui,
                     &data.other_peers,
                     &data.rooms,
-                    &mut self.current_room,
-                    &mut self.current_peer,
+                    &mut self.current_mode,
                     &mut self.request_filter,
                 )
             });

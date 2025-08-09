@@ -3,15 +3,11 @@ use std::collections::HashMap;
 use dtchat_backend::dtchat::{Peer, Room};
 use egui::Ui;
 
+use crate::messages::MessagingMode;
+
 pub struct SideSelectionView {
     last_peer: Option<Peer>,
     last_room: Option<Room>,
-    current_type: MessagingType,
-}
-#[derive(PartialEq)]
-enum MessagingType {
-    Direct,
-    Room,
 }
 
 impl SideSelectionView {
@@ -19,7 +15,6 @@ impl SideSelectionView {
         Self {
             last_room: None,
             last_peer: None,
-            current_type: MessagingType::Direct,
         }
     }
 
@@ -28,65 +23,68 @@ impl SideSelectionView {
         ui: &mut Ui,
         peers: &HashMap<String, Peer>,
         rooms: &HashMap<String, Room>,
-        selected_room: &mut Option<Room>,
-        selected_peer: &mut Option<Peer>,
-        request_room_filter: &mut bool,
+        current_mode: &mut MessagingMode,
+        request_filter: &mut bool,
     ) {
         ui.horizontal(|ui| {
             if ui
-                .selectable_value(&mut self.current_type, MessagingType::Direct, "Peers")
+                .selectable_value(
+                    current_mode,
+                    MessagingMode::Peer(self.last_peer.clone()),
+                    "Peers",
+                )
                 .clicked()
             {
-                *selected_room = None;
-                *selected_peer = self.last_peer.clone();
-                *request_room_filter = true;
+                *request_filter = true;
             };
             ui.separator();
             if ui
-                .selectable_value(&mut self.current_type, MessagingType::Room, "Rooms")
+                .selectable_value(
+                    current_mode,
+                    MessagingMode::Room(self.last_room.clone()),
+                    "Rooms",
+                )
                 .clicked()
             {
-                *selected_peer = None;
-                *selected_room = self.last_room.clone();
-                *request_room_filter = true;
+                *request_filter = true;
             };
         });
         ui.separator();
-        egui::ScrollArea::vertical().show(ui, |ui| match self.current_type {
-            MessagingType::Direct => {
+        egui::ScrollArea::vertical().show(ui, |ui| match current_mode {
+            MessagingMode::Peer(peer_opt) => {
                 if peers.is_empty() {
                     ui.label("No peers");
                 } else {
                     for (_peer_uuid, peer) in peers {
                         if ui
                             .selectable_value(
-                                selected_peer,
+                                peer_opt,
                                 Some(peer.clone()),
                                 format!("\u{1F464} {}", &peer.name),
                             )
                             .clicked()
                         {
                             self.last_peer = Some(peer.clone());
-                            *request_room_filter = true;
+                            *request_filter = true;
                         };
                     }
                 }
             }
-            MessagingType::Room => {
+            MessagingMode::Room(room_opt) => {
                 if rooms.is_empty() {
                     ui.label("No rooms");
                 } else {
                     for (_room_uuid, room) in rooms {
                         if ui
                             .selectable_value(
-                                selected_room,
+                                room_opt,
                                 Some(room.clone()),
                                 format!("\u{1F465} {}", &room.name),
                             )
                             .clicked()
                         {
                             self.last_room = Some(room.clone());
-                            *request_room_filter = true;
+                            *request_filter = true;
                         };
                     }
                 }
