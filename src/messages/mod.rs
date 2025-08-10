@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use dtchat_backend::{
     dtchat::{Peer, Room},
     message::{sort_with_strategy, ChatMessage, SortStrategy},
@@ -20,6 +22,63 @@ pub mod list_view;
 pub mod prompt_view;
 pub mod settings_view;
 pub mod side_view;
+
+#[derive(PartialEq, Clone)]
+pub enum MessageCountToDisplay {
+    Nothing,
+    All,
+    Last(usize),
+}
+
+#[derive(PartialEq, Clone)]
+struct Preferences {
+    pub max_message_count: MessageCountToDisplay,
+    pub sort_strategy: SortStrategy,
+    pub protocol_filter: ProtoFilter,
+}
+
+impl Preferences {
+    pub fn new() -> Self {
+        Self {
+            max_message_count: MessageCountToDisplay::All,
+            sort_strategy: SortStrategy::Standard,
+            protocol_filter: ProtoFilter::NoFilter,
+        }
+    }
+}
+
+pub struct PreferencesContext {
+    last_uuid: Option<String>,
+    current_context: Preferences,
+    context_map: HashMap<String, Preferences>,
+}
+
+impl PreferencesContext {
+    pub fn new() -> Self {
+        Self {
+            last_uuid: None,
+            current_context: Preferences::new(),
+            context_map: HashMap::new(),
+        }
+    }
+
+    pub fn load_context(&mut self, uuid: &str) {
+        if let Some(ref last_uuid) = self.last_uuid {
+            if last_uuid != uuid {
+                self.context_map
+                    .insert(last_uuid.clone(), self.current_context.clone());
+            }
+        }
+
+        self.current_context = self
+            .context_map
+            .entry(uuid.to_string())
+            .or_insert_with(|| Preferences::new())
+            .clone();
+
+        self.last_uuid = Some(uuid.to_string());
+    }
+}
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum MessageViewType {
@@ -69,12 +128,9 @@ impl std::fmt::Display for ProtoFilter {
 pub struct MessageView {
     pub request_filter: bool,
 
-    pub max_message_count: usize,
-    pub sort_strategy: SortStrategy,
-    pub protocol_filter: ProtoFilter,
-
-    // defines the view
+    // defines the view/preferences
     pub current_mode: MessagingMode,
+    pub pref_ctx: PreferencesContext,
 
     // views
     pub message_prompt_view: MessagePromptView,
@@ -97,9 +153,8 @@ impl MessageView {
             message_settings_view: MessageSettingsView::new(),
             current_view: MessageViewType::MessageGraph,
             request_filter: false,
-            max_message_count: 0,
-            sort_strategy: SortStrategy::Standard,
-            protocol_filter: ProtoFilter::NoFilter,
+            pref_ctx: PreferencesContext::new(),
+
             current_mode: MessagingMode::Peer(None),
             message_list_view: MessageListView::new(),
             message_graph_view: MessageGraphView::new(),
@@ -115,7 +170,7 @@ impl MessageView {
             .filter(|msg| {
                 let mut retain = true;
 
-                match &self.protocol_filter {
+                match &self.pref_ctx.current_context.protocol_filter {
                     ProtoFilter::NoFilter => (),
                     ProtoFilter::Filter(endpoint_proto) => {
                         if msg.source_endpoint.proto != *endpoint_proto {
@@ -135,9 +190,21 @@ impl MessageView {
             .cloned()
             .collect();
 
-        sort_with_strategy(&mut self.messages_to_display, self.sort_strategy.clone());
+        sort_with_strategy(
+            &mut self.messages_to_display,
+            self.pref_ctx.current_context.sort_strategy.clone(),
+        );
 
         // Should be safe as long as those flags are not supposed to be raised asynchronously
+    }
+
+    fn message_to_display_bounds(&mut self) -> usize {
+        let msgs = self.messages_to_display.len();
+        match self.pref_ctx.current_context.max_message_count {
+            MessageCountToDisplay::Nothing => msgs,
+            MessageCountToDisplay::All => 0,
+            MessageCountToDisplay::Last(count) => msgs.saturating_sub(count),
+        }
     }
 
     pub fn show(&mut self, data: &MirroredData, current_time: &DTChatTime, ui: &mut Ui) {
@@ -146,10 +213,7 @@ impl MessageView {
             self.request_filter = false;
         }
 
-        let start_idx: usize = self
-            .messages_to_display
-            .len()
-            .saturating_sub(self.max_message_count);
+        let start_idx: usize = self.message_to_display_bounds();
 
         egui::SidePanel::right("right_panel")
             .resizable(true)
@@ -160,6 +224,7 @@ impl MessageView {
                     ui,
                     &data.other_peers,
                     &data.rooms,
+                    &mut self.pref_ctx,
                     &mut self.current_mode,
                     &mut self.request_filter,
                 )
@@ -171,9 +236,9 @@ impl MessageView {
                 self.message_settings_view.show(
                     ui,
                     &mut self.current_view,
-                    &mut self.sort_strategy,
-                    &mut self.protocol_filter,
-                    &mut self.max_message_count,
+                    &mut self.pref_ctx.current_context.sort_strategy,
+                    &mut self.pref_ctx.current_context.protocol_filter,
+                    &mut self.pref_ctx.current_context.max_message_count,
                     self.messages_to_display.len(),
                     &data.local_peer,
                     &data.other_peers,

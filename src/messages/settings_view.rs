@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::messages::{MessageViewType, ProtoFilter};
+use crate::messages::{MessageCountToDisplay, MessageViewType, ProtoFilter};
 use crate::utils::text::PrettyStr;
 use dtchat_backend::dtchat::Peer;
 use dtchat_backend::message::SortStrategy;
@@ -55,8 +55,8 @@ impl MessageSettingsView {
         current_view: &mut MessageViewType,
         sort_strategy: &mut SortStrategy,
         protocol_filter: &mut ProtoFilter,
-        max_message_count: &mut usize,
-        message_in_db: usize,
+        max_message_count: &mut MessageCountToDisplay,
+        message_in_db_for_ctx: usize,
         local_peer: &Peer,
         other_peers: &HashMap<String, Peer>,
         request_filter: &mut bool,
@@ -190,28 +190,29 @@ impl MessageSettingsView {
 
                 ui.separator();
 
-                let enable_slider = message_in_db > 0;
-
+                let enable_slider = message_in_db_for_ctx > 0;
+                let (mut slider, display_txt) = match max_message_count {
+                        MessageCountToDisplay::Nothing => (0, "Hide all".to_string()),
+                        MessageCountToDisplay::All => (message_in_db_for_ctx, "Show all".to_string()),
+                        MessageCountToDisplay::Last(count) => (*count, format!("Last {} messages", count).to_string()),
+                    };
                 // TODO, use this before using other sliders
                 ui.style_mut().spacing.slider_width = 60.0;
-                ui.add_enabled(enable_slider, {
-                    let displayed = *max_message_count;
-                    let str_display = if message_in_db == 0 {
-                        String::from("No messages")
-                    } else if *max_message_count == message_in_db {
-                        String::from("All messages")
-                    } else if *max_message_count == 0 {
-                        String::from("Hide all")
-                    } else {
-                        if displayed == 1 {
-                            format!("Last message")
-                        } else {
-                            format!("Last {} messages", displayed)
-                        }
-                    };
+                if ui.add_enabled(enable_slider, {
 
-                    Slider::new(max_message_count, message_in_db..=0).text(str_display)
-                });
+                    Slider::new(&mut slider, message_in_db_for_ctx..=0).text(display_txt)
+                }).changed(){
+
+                    if slider == 0 {
+                        if *max_message_count != MessageCountToDisplay::Nothing {
+                             *max_message_count = MessageCountToDisplay::Nothing;
+                        }
+                    } else if  slider == message_in_db_for_ctx {
+                       *max_message_count = MessageCountToDisplay::All;
+                    } else {
+                        *max_message_count = MessageCountToDisplay::Last(slider);
+                    }
+            }
 
             });
         ui.add_space(3.0);

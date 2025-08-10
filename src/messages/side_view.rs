@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use dtchat_backend::dtchat::{Peer, Room};
 use egui::Ui;
 
-use crate::messages::MessagingMode;
+use crate::messages::{MessagingMode, PreferencesContext};
 
 pub struct SideSelectionView {
     last_peer: Option<Peer>,
@@ -23,6 +23,7 @@ impl SideSelectionView {
         ui: &mut Ui,
         peers: &HashMap<String, Peer>,
         rooms: &HashMap<String, Room>,
+        pref_ctx: &mut PreferencesContext,
         current_mode: &mut MessagingMode,
         request_filter: &mut bool,
     ) {
@@ -35,6 +36,10 @@ impl SideSelectionView {
                 )
                 .clicked()
             {
+                if let Some(peer) = &self.last_peer {
+                    pref_ctx.load_context(&peer.uuid);
+                }
+
                 *request_filter = true;
             };
             ui.separator();
@@ -46,6 +51,9 @@ impl SideSelectionView {
                 )
                 .clicked()
             {
+                if let Some(room) = &self.last_room {
+                    pref_ctx.load_context(&room.uuid);
+                }
                 *request_filter = true;
             };
         });
@@ -65,6 +73,7 @@ impl SideSelectionView {
                             .clicked()
                         {
                             self.last_peer = Some(peer.clone());
+                            pref_ctx.load_context(&peer.uuid);
                             *request_filter = true;
                         };
                     }
@@ -84,6 +93,7 @@ impl SideSelectionView {
                             .clicked()
                         {
                             self.last_room = Some(room.clone());
+                            pref_ctx.load_context(&room.uuid);
                             *request_filter = true;
                         };
                     }
