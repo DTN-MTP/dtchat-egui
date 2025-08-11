@@ -1,7 +1,10 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use dtchat_backend::{
-    dtchat::{Peer, Room},
+    dtchat::{ChatModel, Peer, Room},
     message::{sort_with_strategy, ChatMessage, SortStrategy},
     time::DTChatTime,
     EndpointProto,
@@ -125,7 +128,7 @@ impl std::fmt::Display for ProtoFilter {
     }
 }
 
-pub struct MessageView {
+pub struct MessagesView {
     pub request_filter: bool,
 
     // defines the view/preferences
@@ -146,10 +149,10 @@ pub struct MessageView {
     pub messages_to_display: Vec<ChatMessage>,
 }
 
-impl MessageView {
-    pub fn new() -> Self {
+impl MessagesView {
+    pub fn new(model: Arc<Mutex<ChatModel>>) -> Self {
         Self {
-            message_prompt_view: MessagePromptView::new(),
+            message_prompt_view: MessagePromptView::new(model),
             message_settings_view: MessageSettingsView::new(),
             current_view: MessageViewType::MessageGraph,
             request_filter: false,
@@ -212,6 +215,11 @@ impl MessageView {
             self.manage_message(data);
             self.request_filter = false;
         }
+
+        TopBottomPanel::bottom("message_forge_panel").show_inside(ui, |ui| {
+            self.message_prompt_view
+                .show(ui, data.pbat_support_by_model, &self.current_mode);
+        });
 
         let start_idx: usize = self.message_to_display_bounds();
 

@@ -7,6 +7,7 @@ use egui::{ComboBox, RichText, Ui};
 use std::sync::{Arc, Mutex};
 
 pub struct MessagePromptView {
+    model: Arc<Mutex<ChatModel>>,
     pub input_text: String,
     pub selected_endpoint: Option<Endpoint>,
     pub pbat_enabled: bool,
@@ -18,8 +19,9 @@ enum PrepareSend {
 }
 
 impl MessagePromptView {
-    pub fn new() -> Self {
+    pub fn new(model: Arc<Mutex<ChatModel>>) -> Self {
         Self {
+            model,
             input_text: String::new(),
             selected_endpoint: None, // Default TCP
             pbat_enabled: false,
@@ -29,7 +31,6 @@ impl MessagePromptView {
     pub fn show(
         &mut self,
         ui: &mut egui::Ui,
-        chat_model: &Arc<Mutex<ChatModel>>,
         pbat_support_by_model: bool,
         current_mode: &MessagingMode,
     ) {
@@ -112,7 +113,7 @@ impl MessagePromptView {
             });
 
             if let Some(to_send) = must_send {
-                if let Ok(mut model) = chat_model.lock() {
+                if let Ok(mut model) = self.model.lock() {
                     match to_send {
                         PrepareSend::ToRoom(room) => {
                             model.send_to_room(

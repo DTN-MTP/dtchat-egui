@@ -1,6 +1,6 @@
 use crate::app::DisplayEvent;
 use crate::header_view::HeaderView;
-use crate::messages::MessageView;
+use crate::messages::MessagesView;
 use crate::network_view::NetworkView;
 use dtchat_backend::dtchat::{ChatModel, Peer, Room};
 use dtchat_backend::message::ChatMessage;
@@ -29,7 +29,7 @@ pub struct MirroredData {
 pub struct MainView {
     //  views
     pub header_view: HeaderView,
-    pub message_view: MessageView,
+    pub message_view: MessagesView,
     pub network_view: NetworkView,
 
     // current_view
@@ -40,10 +40,10 @@ pub struct MainView {
 }
 
 impl MainView {
-    pub fn new(local: Peer) -> Self {
+    pub fn new(local: Peer, model: Arc<Mutex<ChatModel>>) -> Self {
         Self {
             header_view: HeaderView::new(),
-            message_view: MessageView::new(),
+            message_view: MessagesView::new(model),
             network_view: NetworkView {},
             current_view: ViewType::Messages,
             data: MirroredData {
@@ -75,7 +75,7 @@ impl MainView {
         self.data.network_events.extend(network_events);
     }
 
-    pub fn show(&mut self, ui: &mut Ui, chat_model: &Arc<Mutex<ChatModel>>) {
+    pub fn show(&mut self, ui: &mut Ui) {
         let current_time = DTChatTime::now();
 
         TopBottomPanel::top("header").show_inside(ui, |ui| {
@@ -96,19 +96,6 @@ impl MainView {
 
         match self.current_view {
             ViewType::Messages => {
-                // Although part of the message_view, we do not want to give access to the model
-                // So we show it from here..
-                TopBottomPanel::bottom("message_forge_panel").show_inside(ui, |ui| {
-                    self.message_view.message_prompt_view.show(
-                        ui,
-                        chat_model,
-                        self.data.pbat_support_by_model,
-                        // ..as if it was in the messages mod
-                        &self.message_view.current_mode,
-                    );
-                });
-
-                // For correct height calculation, draw central panel at last
                 self.message_view.show(&mut self.data, &current_time, ui);
             }
             ViewType::Network => {

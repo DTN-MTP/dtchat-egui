@@ -309,7 +309,7 @@ pub struct DTChatApp {
 impl DTChatApp {
     pub fn new(chat_model: Arc<Mutex<ChatModel>>, event_handler: Arc<Mutex<EventHandler>>) -> Self {
         let local = chat_model.lock().unwrap().get_localpeer();
-        let ui = MainView::new(local);
+        let ui = MainView::new(local, chat_model.clone());
 
         Self {
             event_handler,
@@ -349,7 +349,7 @@ impl App for DTChatApp {
         }
 
         CentralPanel::default().show(ctx, |ui| {
-            self.ui.show(ui, &self.chat_model);
+            self.ui.show(ui);
         });
 
         ctx.request_repaint();
