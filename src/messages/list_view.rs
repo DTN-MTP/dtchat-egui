@@ -11,7 +11,6 @@ use egui::RichText;
 
 pub struct MessageListView {
     pub show_timestamps: bool,
-    pub compact_mode: bool,
     pub clock: Clock,
 }
 
@@ -20,7 +19,6 @@ impl MessageListView {
         let dumy_time = DTChatTime::now();
         Self {
             show_timestamps: true,
-            compact_mode: false,
             clock: Clock::new(&dumy_time, true),
         }
     }
@@ -106,14 +104,7 @@ impl MessageListView {
                 ui.label(RichText::new(format!("{}:", peer_name)).strong());
             }
 
-            // Message text avec troncature exacte de dtchat_tui (40 chars -> 37 + "...")
-            let display_text = if msg.text.len() > 40 && !self.compact_mode {
-                format!("{}...", &msg.text[..37])
-            } else {
-                msg.text.clone()
-            };
-
-            ui.label(display_text);
+            ui.label(msg.content_as_string());
         });
     }
 }

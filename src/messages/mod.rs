@@ -210,7 +210,13 @@ impl MessagesView {
         }
     }
 
-    pub fn show(&mut self, data: &MirroredData, current_time: &DTChatTime, ui: &mut Ui) {
+    pub fn show(
+        &mut self,
+        ctx: &egui::Context,
+        data: &MirroredData,
+        current_time: &DTChatTime,
+        ui: &mut Ui,
+    ) {
         if self.request_filter {
             self.manage_message(data);
             self.request_filter = false;
@@ -218,7 +224,7 @@ impl MessagesView {
 
         TopBottomPanel::bottom("message_forge_panel").show_inside(ui, |ui| {
             self.message_prompt_view
-                .show(ui, data.pbat_support_by_model, &self.current_mode);
+                .show(ctx, ui, data.pbat_support_by_model, &self.current_mode);
         });
 
         let start_idx: usize = self.message_to_display_bounds();

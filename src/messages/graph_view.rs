@@ -81,7 +81,7 @@ impl MessageGraphView {
         now: f64,
     ) -> (BoxElem, String, Color32, String, f64, f64) {
         // Nom de la boîte simplifié sans emoji
-        let box_name = self.truncate_text(&message.text, 30);
+        let box_name = self.truncate_text(&message.content_as_string(), 30);
 
         // Statut du message pour la tooltip
         let status_text = match &message.status {

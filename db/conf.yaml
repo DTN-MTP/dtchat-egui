@@ -1,5 +1,6 @@
 cp_path: "./db/ion.cp"
 db_type: YamlVec
+file_reception_dir: ./reception/
 
 peer_list:
   - uuid: "1"

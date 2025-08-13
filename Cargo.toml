@@ -14,6 +14,7 @@ egui_plot = "0.31.0" # need to leave it at 0.31.0 for now
 uuid = { version = "1.6.1", features = ["v4"] }
 chrono = "0.4.41"
 serde_yaml = "0.9.33"
+egui-file-dialog = "0.10.0"
 
 [features]
 default = []
