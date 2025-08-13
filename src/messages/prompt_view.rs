@@ -1,17 +1,23 @@
 use crate::messages::MessagingMode;
 use crate::utils::text::PrettyStr;
 use dtchat_backend::dtchat::{ChatModel, Peer, Room};
+use dtchat_backend::message::Content;
 use dtchat_backend::Endpoint;
 use eframe::egui;
 use egui::{ComboBox, RichText, Ui};
+use egui_file_dialog::FileDialog;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 pub struct MessagePromptView {
     model: Arc<Mutex<ChatModel>>,
-    pub input_text: String,
-    pub selected_endpoint: Option<Endpoint>,
-    pub pbat_enabled: bool,
+    input_text: String,
+    selected_endpoint: Option<Endpoint>,
+    pbat_enabled: bool,
+    file_dialog: FileDialog,
+    picked_file: Option<PathBuf>,
 }
+
 #[derive(Clone)]
 enum PrepareSend {
     ToRoom(Room),
@@ -25,16 +31,25 @@ impl MessagePromptView {
             input_text: String::new(),
             selected_endpoint: None, // Default TCP
             pbat_enabled: false,
+            file_dialog: FileDialog::new(),
+            picked_file: None,
         }
     }
 
     pub fn show(
         &mut self,
+        ctx: &egui::Context,
         ui: &mut egui::Ui,
         pbat_support_by_model: bool,
         current_mode: &MessagingMode,
     ) {
         let mut prepare_send = None;
+
+        self.file_dialog.update(ctx);
+        if let Some(path) = self.file_dialog.take_picked() {
+            self.picked_file = Some(path.to_path_buf());
+            self.input_text = format!("Send file {}", path.to_string_lossy().to_string());
+        }
 
         ui.add_space(8.0);
 
@@ -83,15 +98,36 @@ impl MessagePromptView {
         ui.horizontal(|ui| {
             // we want to keep prepare_send for footer
             let mut must_send = prepare_send.clone();
-            let input_response = ui.add_enabled(prepare_send.is_some(), |ui: &mut Ui| {
-                let text_edit = egui::TextEdit::singleline(&mut self.input_text)
-                    .hint_text("Type your message...")
-                    .desired_width(ui.available_width() - 80.0)
-                    .margin(egui::Margin::same(6));
+            let input_response = ui.add_enabled(
+                prepare_send.is_some() && self.picked_file.is_none(),
+                |ui: &mut Ui| {
+                    let text_edit = egui::TextEdit::singleline(&mut self.input_text)
+                        .hint_text("Type your message...")
+                        .desired_width(ui.available_width() - 24.0 - 60.0 - 24.0)
+                        .margin(egui::Margin::same(6));
 
-                let response = ui.add(text_edit);
-                response
-            });
+                    let response = ui.add(text_edit);
+                    response
+                },
+            );
+
+            let button_text = if self.picked_file.is_none() {
+                RichText::new("\u{1F4C1}")
+            } else {
+                RichText::new("\u{2716}").color(egui::Color32::RED)
+            };
+            let pick_button = egui::Button::new(button_text)
+                .corner_radius(4.0)
+                .min_size(egui::Vec2::new(24.0, 24.0));
+
+            if ui.add(pick_button).clicked() {
+                self.input_text.clear();
+                if self.picked_file.is_none() {
+                    self.file_dialog.pick_file();
+                } else {
+                    self.picked_file = None
+                }
+            }
 
             ui.add_enabled(prepare_send.is_some(), |ui: &mut Ui| {
                 let send_button = egui::Button::new(RichText::new("Send 📤").strong())
@@ -114,17 +150,17 @@ impl MessagePromptView {
 
             if let Some(to_send) = must_send {
                 if let Ok(mut model) = self.model.lock() {
+                    let content = match &self.picked_file {
+                        Some(file) => Content::File(file.to_string_lossy().to_string()),
+                        None => Content::Text(self.input_text.to_string()),
+                    };
                     match to_send {
                         PrepareSend::ToRoom(room) => {
-                            model.send_to_room(
-                                &self.input_text.to_string(),
-                                &room.uuid,
-                                self.pbat_enabled,
-                            );
+                            model.send_to_room(&content, &room.uuid, self.pbat_enabled);
                         }
                         PrepareSend::ToPeer(peer, endpoint) => {
                             model.send_to_peer(
-                                &self.input_text.to_string(),
+                                &content,
                                 &"".to_string(),
                                 peer.uuid.clone(),
                                 &endpoint,
@@ -134,6 +170,7 @@ impl MessagePromptView {
                     }
                 }
                 input_response.request_focus();
+                self.picked_file = None;
                 self.input_text.clear();
             }
         });

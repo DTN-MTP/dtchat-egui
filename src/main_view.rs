@@ -75,7 +75,7 @@ impl MainView {
         self.data.network_events.extend(network_events);
     }
 
-    pub fn show(&mut self, ui: &mut Ui) {
+    pub fn show(&mut self, ctx: &egui::Context, ui: &mut Ui) {
         let current_time = DTChatTime::now();
 
         TopBottomPanel::top("header").show_inside(ui, |ui| {
@@ -96,7 +96,8 @@ impl MainView {
 
         match self.current_view {
             ViewType::Messages => {
-                self.message_view.show(&mut self.data, &current_time, ui);
+                self.message_view
+                    .show(ctx, &mut self.data, &current_time, ui);
             }
             ViewType::Network => {
                 self.network_view

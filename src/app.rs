@@ -349,7 +349,7 @@ impl App for DTChatApp {
         }
 
         CentralPanel::default().show(ctx, |ui| {
-            self.ui.show(ui);
+            self.ui.show(ctx, ui);
         });
 
         ctx.request_repaint();
