@@ -28,7 +28,7 @@ impl Clock {
         Self {
             minutes: mins,
             hours: hours,
-            str: format!(" {} ", Clock::clock(hours, mins)),
+            str: format!("{}", Clock::clock(hours, mins)),
             anim: if anim { Some(dt.clone()) } else { None },
         }
     }

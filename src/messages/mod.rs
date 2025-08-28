@@ -217,14 +217,20 @@ impl MessagesView {
         current_time: &DTChatTime,
         ui: &mut Ui,
     ) {
+        let peer_context_changed = self.request_filter;
         if self.request_filter {
             self.manage_message(data);
             self.request_filter = false;
         }
 
         TopBottomPanel::bottom("message_forge_panel").show_inside(ui, |ui| {
-            self.message_prompt_view
-                .show(ctx, ui, data.pbat_support_by_model, &self.current_mode);
+            self.message_prompt_view.show(
+                ctx,
+                ui,
+                data.pbat_support_by_model,
+                &self.current_mode,
+                peer_context_changed,
+            );
         });
 
         let start_idx: usize = self.message_to_display_bounds();

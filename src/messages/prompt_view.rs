@@ -42,6 +42,7 @@ impl MessagePromptView {
         ui: &mut egui::Ui,
         pbat_support_by_model: bool,
         current_mode: &MessagingMode,
+        peer_context_changed: bool,
     ) {
         let mut prepare_send = None;
 
@@ -57,7 +58,9 @@ impl MessagePromptView {
             MessagingMode::Peer(Some(peer)) => {
                 let peer_has_endpoints = peer.endpoints.len() > 0;
                 ui.add_enabled_ui(peer_has_endpoints, |ui| {
-                    if self.selected_endpoint.is_none() && peer_has_endpoints {
+                    if peer_context_changed
+                        || (self.selected_endpoint.is_none() && peer_has_endpoints)
+                    {
                         self.selected_endpoint = Some(peer.endpoints[0].clone());
                     }
 

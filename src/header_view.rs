@@ -30,7 +30,7 @@ impl HeaderView {
                             &current_time.ts_to_str(
                                 true,
                                 true,
-                                Some(&self.clock.to_string()),
+                                Some(format!(" {} ", &self.clock.to_string()).as_str()),
                                 &chrono::Local
                             )
                         ))
