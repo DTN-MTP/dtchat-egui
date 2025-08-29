@@ -164,7 +164,7 @@ impl MessagePromptView {
                         PrepareSend::ToPeer(peer, endpoint) => {
                             model.send_to_peer(
                                 &content,
-                                &"".to_string(),
+                                &peer.uuid.clone(),
                                 peer.uuid.clone(),
                                 &endpoint,
                                 self.pbat_enabled,

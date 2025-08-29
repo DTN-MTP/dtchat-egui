@@ -1,7 +1,7 @@
 cp_path: "./db/ion.cp"
 db_type: YamlVec
 file_reception_dir: ./reception/
-
+# peer uuid and room uuid must be different
 peer_list:
   - uuid: "1"
     name: Instance 1
@@ -28,8 +28,8 @@ peer_list:
     color: ORANGE
 
 room_list:
-  - uuid: 1
-    name: "Mission 1"
+  - uuid: "mars"
+    name: "Mars mission"
     participants:
       - peer_uuid: "1"
         endpoint: "tcp 127.0.0.1:6500"
@@ -37,8 +37,8 @@ room_list:
         endpoint: "udp 127.0.0.1:7550"
       - peer_uuid: "3"
         endpoint: "tcp 127.0.0.1:8000"
-  - uuid: 2
-    name: "Mission 2"
+  - uuid: "titan"
+    name: "Titan mission"
     participants:
       - peer_uuid: "1"
         endpoint: "tcp 127.0.0.1:6500"

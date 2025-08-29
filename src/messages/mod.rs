@@ -100,6 +100,7 @@ impl MessageViewType {
 
 #[derive(PartialEq)]
 pub enum MessagingMode {
+    All,
     Peer(Option<Peer>),
     Room(Option<Room>),
 }
@@ -158,7 +159,7 @@ impl MessagesView {
             request_filter: false,
             pref_ctx: PreferencesContext::new(),
 
-            current_mode: MessagingMode::Peer(None),
+            current_mode: MessagingMode::All,
             message_list_view: MessageListView::new(),
             message_graph_view: MessageGraphView::new(),
             room_selection_view: SideSelectionView::new(),
@@ -182,12 +183,27 @@ impl MessagesView {
                     }
                 }
 
-                if let MessagingMode::Room(Some(room)) = &self.current_mode {
-                    if msg.room_uuid != room.uuid {
-                        retain = false;
+                match &self.current_mode {
+                    MessagingMode::Peer(peer_opt) => {
+                        if let Some(peer) = peer_opt {
+                            if !(msg.room_uuid == peer.uuid
+                                && msg.sender_uuid == data.local_peer.uuid
+                                || msg.sender_uuid == peer.uuid
+                                    && msg.room_uuid == data.local_peer.uuid)
+                            {
+                                retain = false;
+                            }
+                        }
                     }
+                    MessagingMode::Room(room_opt) => {
+                        if let Some(room) = room_opt {
+                            if msg.room_uuid != room.uuid {
+                                retain = false;
+                            }
+                        }
+                    }
+                    MessagingMode::All => (),
                 }
-
                 retain
             })
             .cloned()

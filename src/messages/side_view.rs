@@ -28,6 +28,14 @@ impl SideSelectionView {
         request_filter: &mut bool,
     ) {
         ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = 1.0;
+            if ui
+                .selectable_value(current_mode, MessagingMode::All, "All")
+                .clicked()
+            {
+                pref_ctx.load_context("All");
+            }
+            ui.separator();
             if ui
                 .selectable_value(
                     current_mode,
@@ -38,6 +46,12 @@ impl SideSelectionView {
             {
                 if let Some(peer) = &self.last_peer {
                     pref_ctx.load_context(&peer.uuid);
+                } else {
+                    if let Some((_, peer)) = peers.iter().next() {
+                        pref_ctx.load_context(&peer.uuid);
+                        self.last_peer = Some(peer.clone());
+                        *current_mode = MessagingMode::Peer(self.last_peer.clone())
+                    }
                 }
 
                 *request_filter = true;
@@ -53,6 +67,12 @@ impl SideSelectionView {
             {
                 if let Some(room) = &self.last_room {
                     pref_ctx.load_context(&room.uuid);
+                } else {
+                    if let Some((_, room)) = rooms.iter().next() {
+                        pref_ctx.load_context(&room.uuid);
+                        self.last_room = Some(room.clone());
+                        *current_mode = MessagingMode::Room(self.last_room.clone())
+                    }
                 }
                 *request_filter = true;
             };
@@ -98,6 +118,9 @@ impl SideSelectionView {
                         };
                     }
                 }
+            }
+            MessagingMode::All => {
+                ui.label("Showing all messages");
             }
         });
     }
