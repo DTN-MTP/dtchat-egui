@@ -41,35 +41,6 @@ impl AsIndex for MessageStatus {
     }
 }
 
-fn get_bounds_for_box(message: &ChatMessage, now: f64) -> (f64, f64, f64, f64, f64) {
-
-    let sending = message.send_time.timestamp_millis() as f64;
-    let mut med = sending;
-    let mut sent = match message.send_completed {
-        Some(val) => val.timestamp_millis() as f64,
-        None => now,
-    };
-    let recv = match message.receive_time {
-        Some(val) => val.timestamp_millis() as f64,
-        None => now,
-    };
-    let pred = match message.predicted_arrival_time {
-        Some(val) => {
-                let p = val.timestamp_millis() as f64;
-                med = p;
-                p
-        },
-        None => recv
-    };
-
-    // For visibility
-    if message.status == MessageStatus::Failed {
-        sent = sending;
-    }
-
-    (sending, sent, med, recv, pred)
-}
-
 impl MessageGraphView {
     pub fn new() -> Self {
         Self {
@@ -85,16 +56,34 @@ impl MessageGraphView {
         y_position: f64,
         now: f64,
     ) -> (BoxElem, f64, f64) {
-        // Nom de la boîte simplifié sans emoji
         let box_name = self.truncate_text(&message.content_as_string(), 30);
 
-        let (sending, sent, med, recv, pred) = get_bounds_for_box(message, now);
+        let sending = message.send_time.timestamp_millis() as f64;
+        let mut med = sending;
+        let mut sent = match message.send_completed {
+            Some(val) => val.timestamp_millis() as f64,
+            None => now,
+        };
+        let recv = match message.receive_time {
+            Some(val) => val.timestamp_millis() as f64,
+            None => now,
+        };
+        let pred = match message.predicted_arrival_time {
+            Some(val) => {
+                let p = val.timestamp_millis() as f64;
+                med = p;
+                p
+            }
+            None => recv,
+        };
 
-        let box_elem = BoxElem::new(
-            y_position,
-            BoxSpread::new(sending, sent, med, recv, pred),
-        )
-        .name(box_name);
+        // For visibility
+        if message.status == MessageStatus::Failed {
+            sent = sending;
+        }
+
+        let box_elem =
+            BoxElem::new(y_position, BoxSpread::new(sending, sent, med, recv, pred)).name(box_name);
 
         (box_elem, sending, pred)
     }
@@ -249,10 +238,7 @@ impl MessageGraphView {
                                     .unwrap();
                             let date = tx_time.date_naive() != rx_time.date_naive();
 
-                            // Essayer de récupérer le statut correspondant (approximation basée sur l'index)
-                            let status_info =
-                                        format!("\nStatus: {}", status_text) // Utilise le premier statut de ce groupe
-                            ;
+                            let status_info = format!("\nStatus: {}", status_text);
 
                             format!(
                                 "Message: {}\nSent by {}\ntx time: {}\nrx_time: {}{}",
