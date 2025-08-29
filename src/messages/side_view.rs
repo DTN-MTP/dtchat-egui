@@ -34,6 +34,7 @@ impl SideSelectionView {
                 .clicked()
             {
                 pref_ctx.load_context("All");
+                *request_filter = true;
             }
             ui.separator();
             if ui
