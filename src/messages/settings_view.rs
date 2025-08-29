@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::messages::{MessageCountToDisplay, MessageViewType, ProtoFilter};
-use crate::utils::text::PrettyStr;
+use crate::utils::font::PrettyStr;
 use dtchat_backend::dtchat::Peer;
 use dtchat_backend::message::SortStrategy;
 use dtchat_backend::EndpointProto;
@@ -61,8 +61,6 @@ impl MessageSettingsView {
         other_peers: &HashMap<String, Peer>,
         request_filter: &mut bool,
     ) {
-        ui.add_space(3.0);
-
         //   ui.vertical(|ui| {
         ui.horizontal(|ui| {
                 ui.label("View:");

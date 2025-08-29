@@ -1,4 +1,4 @@
-use crate::{app::DisplayEvent, utils::text::PrettyStr};
+use crate::{app::DisplayEvent, utils::font::PrettyStr};
 use eframe::egui::{self, ScrollArea};
 use std::collections::VecDeque;
 

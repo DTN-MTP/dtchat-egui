@@ -1,6 +1,6 @@
 use dtchat_backend::{dtchat::Peer, time::DTChatTime};
 
-use crate::utils::{clock::Clock, text::PrettyStr};
+use crate::utils::{clock::Clock, font::PrettyStr};
 
 pub struct HeaderView {
     clock: Clock,

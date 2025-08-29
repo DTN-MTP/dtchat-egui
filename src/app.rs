@@ -1,5 +1,5 @@
 use crate::main_view::MainView;
-use crate::utils::text::PrettyStr;
+use crate::utils::font::PrettyStr;
 use crate::utils::uuid::safe_id_display;
 use dtchat_backend::dtchat::ChatModel;
 use dtchat_backend::event::{

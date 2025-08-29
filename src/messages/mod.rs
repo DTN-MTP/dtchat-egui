@@ -17,9 +17,9 @@ use crate::{
         graph_view::MessageGraphView, list_view::MessageListView, prompt_view::MessagePromptView,
         settings_view::MessageSettingsView, side_view::SideSelectionView,
     },
-    utils::text::PrettyStr,
+    utils::font::PrettyStr,
 };
-
+pub mod graph_helper_view;
 pub mod graph_view;
 pub mod list_view;
 pub mod prompt_view;
@@ -284,6 +284,7 @@ impl MessagesView {
             match self.current_view {
                 MessageViewType::MessageGraph => {
                     self.message_graph_view.show(
+                        ctx,
                         ui,
                         &self.messages_to_display[start_idx..],
                         &data.local_peer,

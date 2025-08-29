@@ -1,5 +1,5 @@
 use crate::messages::MessagingMode;
-use crate::utils::text::PrettyStr;
+use crate::utils::font::PrettyStr;
 use dtchat_backend::dtchat::{ChatModel, Peer, Room};
 use dtchat_backend::message::Content;
 use dtchat_backend::Endpoint;
@@ -72,7 +72,7 @@ impl MessagePromptView {
                         }
                         None => "⚠ no endpoints".to_string(),
                     };
-
+                    ui.label("Select target endpoint: ");
                     ComboBox::from_id_salt("protocol_selector")
                         .selected_text(selected_text.clone())
                         .show_ui(ui, |ui| {

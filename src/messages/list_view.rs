@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::utils::clock::Clock;
+use crate::utils::{clock::Clock, font::StatusDisplayHelper};
 use dtchat_backend::{
     dtchat::Peer,
     message::{ChatMessage, MessageStatus},
@@ -66,16 +66,8 @@ impl MessageListView {
             };
             let mut sep = "➡";
             // Status indicator avec couleurs selon le statut
-            match &msg.status {
-                MessageStatus::Failed => ui.colored_label(egui::Color32::RED, "[\u{2716}]"),
-                MessageStatus::ReceivedByPeer => {
-                    ui.colored_label(egui::Color32::GREEN, "[\u{2714}]")
-                }
-                MessageStatus::Sent => ui.colored_label(egui::Color32::LIGHT_BLUE, "[\u{1F680}]"),
-                MessageStatus::Sending => ui.colored_label(egui::Color32::YELLOW, "[\u{1F4E4}]"),
-                MessageStatus::Received => ui.colored_label(egui::Color32::GREEN, "[\u{1F4E5}]"),
-            };
 
+            ui.colored_label(msg.status.get_color(), msg.status.get_icon());
             if self.show_timestamps {
                 // Format exact de dtchat_tui: [acked_time:send_time]
                 let receive_time_str = match msg.receive_time {

@@ -5,11 +5,16 @@ use egui::Color32;
 use egui_plot::{AxisHints, BoxElem, BoxPlot, BoxSpread, GridMark, Legend, Plot, VLine};
 use std::collections::HashMap;
 use std::ops::RangeInclusive;
+
+use crate::messages::graph_helper_view::GraphHelperView;
+use crate::utils::font::StatusDisplayHelper;
+
 #[derive(Clone)]
 pub struct MessageGraphView {
     auto_bounds: bool,
-    show_current_time: bool,
     hovered: bool,
+    helper_view: GraphHelperView,
+    show_help_window: bool,
 }
 #[allow(dead_code)]
 trait AutoReset {
@@ -29,8 +34,9 @@ impl MessageGraphView {
     pub fn new() -> Self {
         Self {
             auto_bounds: true,
-            show_current_time: true,
             hovered: false,
+            helper_view: GraphHelperView::new(),
+            show_help_window: false,
         }
     }
 
@@ -83,6 +89,7 @@ impl MessageGraphView {
 
     pub fn show(
         &mut self,
+        ctx: &egui::Context,
         ui: &mut egui::Ui,
         messages: &[ChatMessage],
         local_peer: &Peer,
@@ -108,9 +115,31 @@ impl MessageGraphView {
         let now = current_time.timestamp_millis() as f64;
         let peers = &other_peers;
 
+        ui.add_space(8.0);
         ui.horizontal(|ui| {
-            ui.checkbox(&mut self.auto_bounds, "Auto_bounds");
+            ui.checkbox(&mut self.auto_bounds, "Auto bounds");
+            ui.separator();
+            let button_response = ui.add(egui::Button::new("\u{FF1F}"));
+
+            if button_response.clicked() {
+                self.show_help_window = true;
+            }
         });
+
+        // Show the help window (call this in your main UI update)
+        if self.show_help_window {
+            egui::Window::new("Help")
+                .default_width(700.0)
+                .default_height(500.0)
+                .resizable(true)
+                .collapsible(false)
+                .open(&mut self.show_help_window) // This adds automatic close button
+                .show(ctx, |ui| {
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        self.helper_view.show(ui);
+                    });
+                });
+        }
 
         // drag or scroll must cancel autobound
         // use hovered to treat this only if we are interacting with the graph
@@ -170,9 +199,7 @@ impl MessageGraphView {
             .height(plot_height)
             .show(ui, |plot_ui| {
                 plot_ui.set_auto_bounds(self.auto_bounds);
-                if self.show_current_time {
-                    plot_ui.vline(VLine::new(now).color(Color32::RED).name("Current Time"));
-                }
+                plot_ui.vline(VLine::new(now).color(Color32::ORANGE).name("Current Time"));
 
                 for ((participant_uuid, status), boxes_for_peer_status) in grouped_boxes {
                     let participant_name = if local_peer.uuid == *participant_uuid {
@@ -187,22 +214,8 @@ impl MessageGraphView {
                     let formatter_name = participant_name.clone();
 
                     // Legend text
-                    let status_text = match status {
-                        MessageStatus::Failed => format!("{} (FAILED)", participant_name),
-                        MessageStatus::ReceivedByPeer => format!("{} (ACKED)", participant_name),
-                        MessageStatus::Sending => format!("{} (SENDING)", participant_name),
-                        MessageStatus::Received => format!("{} (RECEIVED)", participant_name),
-                        MessageStatus::Sent => format!("{} (SENT)", participant_name),
-                    }
-                    .to_string();
-
-                    let status_color = match status {
-                        MessageStatus::Failed => Color32::RED,
-                        MessageStatus::ReceivedByPeer => Color32::GREEN,
-                        MessageStatus::Sent => Color32::LIGHT_GRAY,
-                        MessageStatus::Sending => Color32::YELLOW,
-                        MessageStatus::Received => Color32::LIGHT_BLUE,
-                    };
+                    let status_text = status.get_icon_text(&participant_name);
+                    let status_color = status.get_color();
 
                     let box_plot = BoxPlot::new(boxes_for_peer_status)
                         .name(status_text.clone())
