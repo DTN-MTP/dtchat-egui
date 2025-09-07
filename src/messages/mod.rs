@@ -7,7 +7,7 @@ use dtchat_backend::{
     dtchat::{ChatModel, Peer, Room},
     message::{sort_with_strategy, ChatMessage, SortStrategy},
     time::DTChatTime,
-    EndpointProto,
+    Endpoint, EndpointProto,
 };
 use egui::{CentralPanel, TopBottomPanel, Ui};
 
@@ -38,6 +38,7 @@ struct Preferences {
     pub max_message_count: MessageCountToDisplay,
     pub sort_strategy: SortStrategy,
     pub protocol_filter: ProtoFilter,
+    pub proto: Option<Endpoint>,
 }
 
 impl Preferences {
@@ -46,6 +47,7 @@ impl Preferences {
             max_message_count: MessageCountToDisplay::All,
             sort_strategy: SortStrategy::Standard,
             protocol_filter: ProtoFilter::NoFilter,
+            proto: None,
         }
     }
 }
@@ -233,7 +235,6 @@ impl MessagesView {
         current_time: &DTChatTime,
         ui: &mut Ui,
     ) {
-        let peer_context_changed = self.request_filter;
         if self.request_filter {
             self.manage_message(data);
             self.request_filter = false;
@@ -243,9 +244,9 @@ impl MessagesView {
             self.message_prompt_view.show(
                 ctx,
                 ui,
+                &mut self.pref_ctx.current_context.proto,
                 data.pbat_support_by_model,
                 &self.current_mode,
-                peer_context_changed,
             );
         });
 

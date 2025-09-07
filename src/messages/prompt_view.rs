@@ -12,7 +12,6 @@ use std::sync::{Arc, Mutex};
 pub struct MessagePromptView {
     model: Arc<Mutex<ChatModel>>,
     input_text: String,
-    selected_endpoint: Option<Endpoint>,
     pbat_enabled: bool,
     file_dialog: FileDialog,
     picked_file: Option<PathBuf>,
@@ -29,7 +28,6 @@ impl MessagePromptView {
         Self {
             model,
             input_text: String::new(),
-            selected_endpoint: None, // Default TCP
             pbat_enabled: false,
             file_dialog: FileDialog::new(),
             picked_file: None,
@@ -40,9 +38,9 @@ impl MessagePromptView {
         &mut self,
         ctx: &egui::Context,
         ui: &mut egui::Ui,
+        proto_for_peer: &mut Option<Endpoint>,
         pbat_support_by_model: bool,
         current_mode: &MessagingMode,
-        peer_context_changed: bool,
     ) {
         let mut prepare_send = None;
 
@@ -58,13 +56,11 @@ impl MessagePromptView {
             MessagingMode::Peer(Some(peer)) => {
                 let peer_has_endpoints = peer.endpoints.len() > 0;
                 ui.add_enabled_ui(peer_has_endpoints, |ui| {
-                    if peer_context_changed
-                        || (self.selected_endpoint.is_none() && peer_has_endpoints)
-                    {
-                        self.selected_endpoint = Some(peer.endpoints[0].clone());
+                    if proto_for_peer.is_none() && peer_has_endpoints {
+                        *proto_for_peer = Some(peer.endpoints[0].clone());
                     }
 
-                    let selected_text = match &self.selected_endpoint {
+                    let selected_text = match &proto_for_peer {
                         Some(endpoint) => {
                             prepare_send =
                                 Some(PrepareSend::ToPeer(peer.clone(), endpoint.clone()));
@@ -82,7 +78,7 @@ impl MessagePromptView {
                                     .selectable_label(is_selected, endpoint.to_pretty_str())
                                     .clicked()
                                 {
-                                    self.selected_endpoint = Some(endpoint.clone());
+                                    *proto_for_peer = Some(endpoint.clone());
                                 }
                             }
                         });
