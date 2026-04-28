@@ -40,7 +40,7 @@ impl MessageListView {
                     ui.colored_label(egui::Color32::GRAY, "No messages");
                 } else {
                     for message in messages.iter() {
-                        self.render(ui, message, local_peer, other_peers, self.clock.to_string());
+                        self.render(ui, message, local_peer, other_peers, self.clock.as_string());
                         ui.add_space(4.0);
                     }
                 }

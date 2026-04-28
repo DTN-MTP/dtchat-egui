@@ -18,7 +18,7 @@ fn get_str_for_strat(local_peer_uuid: String, _peer: Option<Peer>, strat: &SortS
             if local_peer_uuid == *sort_for_uuid {
                 "Local".to_string()
             } else {
-                format!("Relative")
+                "Relative".to_string()
             }
         }
     }
@@ -49,6 +49,7 @@ impl MessageSettingsView {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn show(
         &mut self,
         ui: &mut Ui,
@@ -180,7 +181,7 @@ impl MessageSettingsView {
 
                         let icon_rect = egui::Align2::RIGHT_CENTER.align_size_within_rect(icon_size, padded_rect);
                         let visuals = ui.style().interact(&response.response);
-                        paint_dropdown_arrow(&ui.painter(), icon_rect.expand(visuals.expansion), &visuals);
+                        paint_dropdown_arrow(ui.painter(), icon_rect.expand(visuals.expansion), visuals);
                     })
                     .response
                 });

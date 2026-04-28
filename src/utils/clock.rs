@@ -17,7 +17,7 @@ impl Clock {
             idx = 12;
         }
 
-        if mins >= 15 && mins < 45 {
+        if (15..45).contains(&mins) {
             idx += 12;
         };
         char::from_u32(0x1F54F + idx).unwrap()
@@ -27,9 +27,9 @@ impl Clock {
         let (mins, hours) = dt.mins_hours(&chrono::Local);
         Self {
             minutes: mins,
-            hours: hours,
+            hours,
             str: format!("{}", Clock::clock(hours, mins)),
-            anim: if anim { Some(dt.clone()) } else { None },
+            anim: if anim { Some(*dt) } else { None },
         }
     }
 
@@ -39,7 +39,7 @@ impl Clock {
                 self.minutes = 100;
                 self.anim = None
             }
-            None => self.anim = Some(curr_time.clone()),
+            None => self.anim = Some(*curr_time),
         }
     }
     pub fn update(&mut self, current_time: &DTChatTime) {
@@ -48,7 +48,7 @@ impl Clock {
                 self.hours += 1;
                 self.hours %= 24;
                 self.str = format!("{}", Clock::clock(self.hours, self.minutes));
-                self.anim = Some(current_time.clone());
+                self.anim = Some(*current_time);
             }
         } else {
             let (mins, hours) = current_time.mins_hours(&chrono::Local);
@@ -59,7 +59,7 @@ impl Clock {
             }
         };
     }
-    pub fn to_string(&self) -> String {
+    pub fn as_string(&self) -> String {
         self.str.clone()
     }
 }

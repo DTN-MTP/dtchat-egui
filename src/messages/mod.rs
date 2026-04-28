@@ -78,7 +78,7 @@ impl PreferencesContext {
         self.current_context = self
             .context_map
             .entry(uuid.to_string())
-            .or_insert_with(|| Preferences::new())
+            .or_insert_with(Preferences::new)
             .clone();
 
         self.last_uuid = Some(uuid.to_string());

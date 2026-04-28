@@ -84,7 +84,7 @@ impl SideSelectionView {
                 if peers.is_empty() {
                     ui.label("No peers");
                 } else {
-                    for (_peer_uuid, peer) in peers {
+                    for peer in peers.values() {
                         if ui
                             .selectable_value(
                                 peer_opt,
@@ -104,7 +104,7 @@ impl SideSelectionView {
                 if rooms.is_empty() {
                     ui.label("No rooms");
                 } else {
-                    for (_room_uuid, room) in rooms {
+                    for room in rooms.values() {
                         if ui
                             .selectable_value(
                                 room_opt,

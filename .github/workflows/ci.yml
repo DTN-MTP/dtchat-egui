@@ -2,26 +2,25 @@ name: DT-Chat CI
 
 on:
   push:
-    branches: ["develop","main","feature/*", "fix/*"]
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  lint:
+    name: Lint and Style (Pre-commit)
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          token: ${{ secrets.MY_PAT}}
-      - run: | 
+      - run: |
             sudo apt-get update
-            sudo apt-get install -y protobuf-compiler libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
+            sudo apt-get install -y protobuf-compiler libssl-dev
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt, clippy
+          components: clippy, rustfmt
       - uses: swatinem/rust-cache@v2
-
-      - run: cargo fmt --all -- --check
-        continue-on-error: true
-      - run: cargo clippy
-      - run: cargo test --bins --tests
+      - uses: pre-commit/action@v3.0.1

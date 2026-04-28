@@ -30,7 +30,7 @@ impl HeaderView {
                             &current_time.ts_to_str(
                                 true,
                                 true,
-                                Some(format!(" {} ", &self.clock.to_string()).as_str()),
+                                Some(format!(" {} ", &self.clock.as_string()).as_str()),
                                 &chrono::Local
                             )
                         ))
@@ -52,13 +52,13 @@ impl HeaderView {
                         eframe::egui::Layout::top_down(eframe::egui::Align::Max), // Align to right (Max = right)
                         |ui| {
                             ui.label(
-                                eframe::egui::RichText::new(&format!("👤 {}", local_peer.name))
+                                eframe::egui::RichText::new(format!("👤 {}", local_peer.name))
                                     .size(12.0)
                                     .strong(),
                             );
                             ui.add_space(5.0);
                             for endpoint in &local_peer.endpoints {
-                                let protocol_text = format!("{}", endpoint.to_pretty_str());
+                                let protocol_text = endpoint.to_pretty_str().to_string();
                                 ui.label(eframe::egui::RichText::new(&protocol_text).size(10.5));
                             }
                         },

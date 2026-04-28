@@ -166,7 +166,7 @@ impl MessageGraphView {
 
             grouped_boxes
                 .entry((message.sender_uuid.clone(), message.status.clone()))
-                .or_insert(Vec::new())
+                .or_default()
                 .push(box_elem);
         }
 

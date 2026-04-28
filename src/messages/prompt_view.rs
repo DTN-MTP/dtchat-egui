@@ -47,14 +47,14 @@ impl MessagePromptView {
         self.file_dialog.update(ctx);
         if let Some(path) = self.file_dialog.take_picked() {
             self.picked_file = Some(path.to_path_buf());
-            self.input_text = format!("Send file {}", path.to_string_lossy().to_string());
+            self.input_text = format!("Send file {}", path.to_string_lossy());
         }
 
         ui.add_space(8.0);
 
         ui.horizontal(|ui| match current_mode {
             MessagingMode::Peer(Some(peer)) => {
-                let peer_has_endpoints = peer.endpoints.len() > 0;
+                let peer_has_endpoints = !peer.endpoints.is_empty();
                 ui.add_enabled_ui(peer_has_endpoints, |ui| {
                     if proto_for_peer.is_none() && peer_has_endpoints {
                         *proto_for_peer = Some(peer.endpoints[0].clone());
@@ -89,7 +89,7 @@ impl MessagePromptView {
                 ui.label(format!("To room \"{}\"", room.name));
             }
             _ => {
-                ui.colored_label(egui::Color32::DARK_GRAY, format!("Select a peer/room"));
+                ui.colored_label(egui::Color32::DARK_GRAY, "Select a peer/room".to_string());
             }
         });
         ui.add_space(8.0);
@@ -104,9 +104,7 @@ impl MessagePromptView {
                         .hint_text("Type your message...")
                         .desired_width(ui.available_width() - 24.0 - 60.0 - 24.0)
                         .margin(egui::Margin::same(6));
-
-                    let response = ui.add(text_edit);
-                    response
+                    ui.add(text_edit)
                 },
             );
 
@@ -185,10 +183,9 @@ impl MessagePromptView {
                 ),
             )
             .on_disabled_hover_text("The CP_PATH env variable must be set before starting the app");
-            ui.with_layout(
-                egui::Layout::right_to_left(egui::Align::Center),
-                |ui| match prepare_send {
-                    Some(to_send) => match to_send {
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if let Some(to_send) = prepare_send {
+                    match to_send {
                         PrepareSend::ToRoom(room) => {
                             ui.colored_label(egui::Color32::GRAY, format!("to room {}", room.name));
                         }
@@ -198,10 +195,9 @@ impl MessagePromptView {
                                 format!("to {} via {}", peer.name, endpoint.to_pretty_str()),
                             );
                         }
-                    },
-                    None => {}
-                },
-            );
+                    }
+                }
+            });
         });
     }
 }
